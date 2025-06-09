@@ -1,0 +1,30 @@
+{
+  "name": "infinite-tales-yt-video-render-service",
+  "version": "1.0.0",
+  "description": "Remotion video rendering microservice",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "multer": "^1.4.5-lts.1",
+    "@remotion/bundler": "^4.0.266",
+    "@remotion/renderer": "^4.0.266",
+    "@remotion/animation-utils": "^4.0.266",
+    "@remotion/google-fonts": "^4.0.266",
+    "@remotion/transitions": "^4.0.266"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^22.15.30",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "@types/cors": "^2.8.13",
+    "@types/multer": "^1.4.7",
+    "tsx": "^4.0.0"
+  }
+}
