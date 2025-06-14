@@ -88,3 +88,9 @@ docs/_build/
 
 # Optional - ignore compiled JavaScript if using transpilers
 *.js.map
+
+# Ignore vosk model folder
+services/vosk-model
+
+# Ignore data.json
+services/data.json

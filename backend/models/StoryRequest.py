@@ -1,13 +1,12 @@
-import json
 from typing import List, Optional
 from pydantic import BaseModel
 
 class StoryBlock(BaseModel):
     block: int
     text: str
-    image_prompt: Optional[str] = None
-    animation_prompt: Optional[str] = None
+    imagePrompt: Optional[str] = None
+    animationPrompt: Optional[str] = None
 
 class StoryRequest(BaseModel):
     topic: str
-    story_blocks: List[StoryBlock]
+    storyBlocks: List[StoryBlock]

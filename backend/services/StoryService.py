@@ -1,5 +1,7 @@
 from models.StoryRequest import StoryRequest
-import re
+from models.StoryResponse import StoryResponse, StoryBlock
+from typing import List
+from services.MediaService import MediaService
 
 class StoryService:
     def __init__(self):
@@ -12,13 +14,23 @@ class StoryService:
         return line
 
     async def refine_story(self, data: StoryRequest):
-        scenes = []
+        
+        media_service = MediaService()
 
-        for block in data.story_blocks:
+        images_base64: List[str] = []
+        for block in data.storyBlocks:
+            image_prompt = block.imagePrompt
+            gen_images_base64: List[str] = await media_service.generate_google_fx(image_prompt)
+            images_base64.append(gen_images_base64[0])
+
+        scenes: List[StoryBlock] = []
+        for index, block in enumerate(data.storyBlocks):
             normalized_text = self.normalize_line(block.text)
-            scenes.append({
-                "index": block.block,
-                "script": normalized_text
-            })
 
-        return {"scenes": scenes}
+            scenes.append(StoryBlock(
+                block=block.block,
+                text=normalized_text,
+                imageBase64=images_base64[index]
+            ))
+
+        return StoryResponse(topic=data.topic, storyBlocks=scenes)

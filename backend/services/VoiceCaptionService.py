@@ -4,7 +4,6 @@ import io
 import re
 import math
 import edge_tts
-from pathlib import Path
 from models.VoiceCaptionRequest import VoiceCaptionRequest
 from models.VoiceCaptionResponse import VoiceCaptionResponse, Word, CaptionSegment, Caption, VoiceCaption
 from models.VoiceModel import VoiceModel
@@ -174,7 +173,7 @@ class VoiceCaptionService:
         for scene in request.scenes:
             # Generate voice and obtain SRT data.
             submaker = edge_tts.SubMaker()
-            communicate = edge_tts.Communicate(scene.script, request.narrator)
+            communicate = edge_tts.Communicate(scene.text, request.narrator)
             voice_buffer = io.BytesIO()
 
             async for chunk in communicate.stream():
@@ -188,7 +187,7 @@ class VoiceCaptionService:
             srt_content: str = submaker.get_srt()
 
             # Convert SRT to caption (expected to return a Caption object)
-            caption_json: Caption = self.convert_srt_to_caption_json(srt_content, scene.script)
+            caption_json: Caption = self.convert_srt_to_caption_json(srt_content, scene.text)
 
             if caption_json.segments:
                 duration = int(math.ceil(caption_json.segments[-1].end / 1000))
@@ -196,7 +195,7 @@ class VoiceCaptionService:
                 duration = 0
 
             voiceCaptions.append(VoiceCaption(
-                index=scene.index,
+                index=scene.block,
                 voiceBase64=voice_base64,
                 contentType="audio/mpeg",
                 duration=duration,

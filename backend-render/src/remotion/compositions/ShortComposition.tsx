@@ -17,15 +17,13 @@ export const ShortComposition: React.FC<ShortConfig> = (props) => {
   const { fps } = useVideoConfig();
   const font = getFontFamily(props.captionStyle?.font);
 
-  // Calculate scene timings with 0.5s padding at start and end of each scene
+  // Calculate scene timings without padding - use exact audio duration
   const scenesWithTiming = useMemo(() => {
     return (
       props.scenes?.map((scene) => {
         const audioDurationInFrames = Math.round(scene.voice.duration * fps);
-        const totalSceneDurationInFrames = Math.round(
-          (scene.voice.duration + 1) * fps
-        ); // Add 1 second for padding
-        const audioStartFrame = Math.round(0.5 * fps); // Start audio 0.5s after scene start
+        const totalSceneDurationInFrames = audioDurationInFrames; // No extra padding
+        const audioStartFrame = 0; // Start audio immediately
 
         return {
           ...scene,
@@ -51,13 +49,13 @@ export const ShortComposition: React.FC<ShortConfig> = (props) => {
             >
               <ZoomPulse src={scene.image || ""} />
 
-              {/* Audio with 0.5s delay */}
+              {/* Audio starts immediately */}
               <Sequence
                 from={scene.audioStartFrame}
                 durationInFrames={scene.audioDurationInFrames}
               >
                 <Audio src={scene.voice.url} />
-                {/* Captions with 0.5s delay if enabled */}
+                {/* Captions start immediately if enabled */}
                 {props.applyCaption && (
                   <Caption
                     captionStyle={props.captionStyle}
@@ -98,13 +96,13 @@ export const ShortComposition: React.FC<ShortConfig> = (props) => {
             >
               <OffthreadVideo src={scene.video || ""} startFrom={0} />
 
-              {/* Audio with 0.5s delay */}
+              {/* Audio starts immediately */}
               <Sequence
                 from={scene.audioStartFrame}
                 durationInFrames={scene.audioDurationInFrames}
               >
                 <Audio src={scene.voice.url} />
-                {/* Captions with 0.5s delay if enabled */}
+                {/* Captions start immediately if enabled */}
                 {props.applyCaption && (
                   <Caption
                     captionStyle={props.captionStyle}

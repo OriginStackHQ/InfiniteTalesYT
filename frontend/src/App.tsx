@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Player } from "@remotion/player";
 import ShortComposition from "./remotion/compositions/ShortComposition";
-import type { ShortConfig } from "./remotion/types/shortCompositionType";
+import type { Scene, ShortConfig } from "./remotion/types/shortCompositionType";
 import {
   Play,
   Settings,
@@ -41,10 +41,13 @@ type Job = {
   fileSize?: number;
 };
 
+type StoryBlock = {
+  block: number;
+  text: string;
+  imageBase64?: string | null;
+};
+
 export default function App() {
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 1) Control states (all fields that go into ShortConfig, plus intermediate)
-  // ─────────────────────────────────────────────────────────────────────────────
   const [fps, setFps] = useState<number>(30);
 
   const [videoSource, setVideoSource] = useState<"Image" | "Video">("Image");
@@ -67,23 +70,16 @@ export default function App() {
   // These two are for the "refine"-flow:
   const [storyJson, setStoryJson] = useState<string>(`{
   "topic": "Kind Pigeon Hero",
-  "story_blocks": [
+  "storyBlocks": [
     {
       "block": 0,
       "text": "सुबह की हल्की धूप में एक छोटा गाँव जग रहा था, जहाँ एक बूढ़ा किसान अपने खेत में काम कर रहा था।",
-      "image_prompt": "A 3D cartoon of a small rural village ...",
-      "animation_prompt": "Slow 3D camera pan ..."
-    }, {
-      "block": 1,
-      "text": "सुबह की हल्की धूप में एक छोटा गाँव जग रहा था, जहाँ एक बूढ़ा किसान अपने खेत में काम कर रहा था।",
-      "image_prompt": "A 3D cartoon of a small rural village ...",
-      "animation_prompt": "Slow 3D camera pan ..."
+      "imagePrompt": "A 3D cartoon of a small rural village ...",
+      "animationPrompt": "Slow 3D camera pan ..."
     }
   ]
 }`);
-  const [refinedScenes, setRefinedScenes] = useState<
-    { index: number; script: string }[]
-  >([]);
+  const [refinedStory, setRefinedStory] = useState<StoryBlock[]>([]);
 
   // For fetching voices:
   const [voices, setVoices] = useState<VoiceModel[]>([]);
@@ -187,9 +183,6 @@ export default function App() {
     return () => clearInterval(iv);
   }, []);
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 2) Fetch available voices once on mount
-  // ─────────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchVoices = async () => {
       setError(null);
@@ -219,13 +212,24 @@ export default function App() {
     fetchVoices();
   }, []);
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 3) "Refine Story" → POST /refine-story
-  // ─────────────────────────────────────────────────────────────────────────────
   const handleRefine = async () => {
     setError(null);
-    setRefinedScenes([]);
-    setShortConfig(null);
+    setRefinedStory([]);
+    setShortConfig({
+      videoSource: "Image",
+      bgSong: "",
+      bgSongVol: 0,
+      scenes: [],
+      applyCaption: true,
+      durationInFrames: 30,
+      captionStyle: {
+        captionType: "WordByWord",
+        textColor: "#ff0000",
+        bgColor: "#000000",
+        font: "Poppins",
+        fontSize: 25,
+      },
+    });
 
     let payload;
     try {
@@ -248,12 +252,8 @@ export default function App() {
         throw new Error(errorJson.message);
       }
       const response = await res.json();
-      if (response.success && Array.isArray(response.data.scenes)) {
-        const scenesArr = response.data.scenes.map((scene: any) => ({
-          index: scene.index,
-          script: scene.script,
-        }));
-        setRefinedScenes(scenesArr);
+      if (response.success && Array.isArray(response.data.storyBlocks)) {
+        setRefinedStory(response.data.storyBlocks);
         // Reset selectedVoice if needed
         if (voices.length > 0) {
           setSelectedVoice(voices[0].ShortName);
@@ -269,12 +269,9 @@ export default function App() {
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 5) "Generate Voice & Caption" → POST /voice-and-caption
-  // ─────────────────────────────────────────────────────────────────────────────
   const handleGenerateVoiceCaption = async () => {
     setError(null);
-    if (refinedScenes.length === 0) {
+    if (refinedStory.length === 0) {
       setError("Please refine the story first.");
       return;
     }
@@ -287,7 +284,7 @@ export default function App() {
 
     const payload = {
       narrator: selectedVoice,
-      scenes: refinedScenes,
+      scenes: refinedStory.map(({ imageBase64, ...rest }) => rest),
     };
 
     try {
@@ -316,27 +313,31 @@ export default function App() {
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // 6) LIVE `shortConfig` builder
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Only the changed part from your App.tsx file:
-
   // Replace this part in your useEffect where shortConfig is built:
   useEffect(() => {
     if (scenes.length === 0) {
-      setShortConfig(null);
+      setShortConfig({
+        videoSource: "Image",
+        bgSong: "",
+        bgSongVol: 0,
+        scenes: [],
+        applyCaption: true,
+        durationInFrames: 30,
+        captionStyle: {
+          captionType: "WordByWord",
+          textColor: "#ff0000",
+          bgColor: "#000000",
+          font: "Poppins",
+          fontSize: 25,
+        },
+      });
       return;
     }
 
-    const scenesForShort: ShortConfig["scenes"] = scenes.map((scene: any) => ({
+    const scenesForShort = scenes.map((scene: any, index) => ({
       video:
-        scene.index % 2 === 0
-          ? "https://www.shutterstock.com/shutterstock/videos/3802079561/preview/stock-footage-atmospheric-vertical-video-aspect-ratio-from-a-drone-following-a-car-as-it-drives-through-a.webm"
-          : "https://www.shutterstock.com/shutterstock/videos/3802080493/preview/stock-footage-breathtaking-vertical-video-aspect-ratio-from-a-drone-capturing-the-scenic-view-of-a-river.webm",
-      image:
-        scene.index % 2 === 0
-          ? "https://images.pexels.com/photos/1294062/pexels-photo-1294062.jpeg?auto=compress&cs=tinysrgb&w=1080&h=1920&dpr=1"
-          : "https://images.pexels.com/photos/32417770/pexels-photo-32417770/free-photo-of-playful-dog-in-curitiba-park-outdoors.jpeg?auto=compress&cs=tinysrgb&w=1080&h=1920&dpr=1 ",
+        "https://www.shutterstock.com/shutterstock/videos/3802080493/preview/stock-footage-breathtaking-vertical-video-aspect-ratio-from-a-drone-capturing-the-scenic-view-of-a-river.webm",
+      image: "data:image/jpeg;base64," + refinedStory[index].imageBase64,
       voice: {
         url: "data:audio/mp3;base64," + scene.voiceBase64,
         caption: scene.caption,
@@ -349,8 +350,8 @@ export default function App() {
       (acc: number, s: any) => acc + (s.duration || 0),
       0
     );
-    const totalDurationWithPadding = totalDurationInSec + scenes.length;
-    const newDurationInFrames = totalDurationWithPadding * fps;
+
+    const newDurationInFrames = totalDurationInSec * fps;
 
     const config: ShortConfig = {
       videoSource,
@@ -567,7 +568,7 @@ export default function App() {
             </div>
           </div>
           {/* Refined Scenes Preview */}
-          {refinedScenes.length > 0 && (
+          {refinedStory.length > 0 && (
             <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-gradient-to-r from-yellow-500 to-orange-500 rounded-lg">
@@ -577,21 +578,21 @@ export default function App() {
                   Refined Scenes
                 </h2>
                 <span className="px-3 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-full text-yellow-300 text-sm">
-                  {refinedScenes.length} scenes
+                  {refinedStory.length} scenes
                 </span>
               </div>
               <div className="max-h-48 overflow-auto custom-scrollbar space-y-3">
-                {refinedScenes.map((s) => (
+                {refinedStory.map((s: StoryBlock) => (
                   <div
-                    key={s.index}
+                    key={s.block}
                     className="p-4 bg-slate-900/30 border border-slate-600/30 rounded-xl"
                   >
                     <div className="flex items-start gap-3">
                       <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium">
-                        Scene {s.index}
+                        Scene {s.block}
                       </span>
                       <p className="text-slate-300 text-sm leading-relaxed flex-1">
-                        {s.script}
+                        {s.text}
                       </p>
                     </div>
                   </div>
@@ -601,7 +602,7 @@ export default function App() {
           )}
 
           {/* Voice Selector */}
-          {refinedScenes.length > 0 && (
+          {refinedStory.length > 0 && (
             <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
@@ -646,7 +647,7 @@ export default function App() {
             </div>
           )}
           {/* Configuration & Preview Row */}
-          {shortConfig && refinedScenes.length > 0 && (
+          {shortConfig && refinedStory.length > 0 && (
             <div className="grid lg:grid-cols-5 gap-8">
               {/* Configuration Panel - 60% width (3/5) */}
               <div className="lg:col-span-3 space-y-6">
