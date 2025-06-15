@@ -28,7 +28,7 @@ class StoryService:
             normalized_text = self.normalize_line(block.text)
 
             scenes.append(StoryBlock(
-                block=block.block,
+                index=block.index,
                 text=normalized_text,
                 imageBase64=images_base64[index]
             ))

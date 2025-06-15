@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Player } from "@remotion/player";
 import ShortComposition from "./remotion/compositions/ShortComposition";
-import type { Scene, ShortConfig } from "./remotion/types/shortCompositionType";
+import type { ShortConfig } from "./remotion/types/shortCompositionType";
 import {
   Play,
   Settings,
@@ -16,18 +16,20 @@ import {
   Download,
   Upload,
   TriangleAlert,
+  Pause,
 } from "lucide-react";
 
 // Keep your VoiceModel type
 type VoiceModel = {
+  VoiceId: string;
   Name: string;
-  ShortName: string;
-  FriendlyName: string;
-  Gender: string;
-  Locale: string;
-  SuggestedCodec: string;
-  Status: string;
-  Language: string;
+  PreviewUrl: string;
+  Gender?: string;
+  Accent?: string;
+  Age?: string;
+  Descriptive?: string;
+  Language?: string;
+  UseCase?: string;
 };
 
 type Job = {
@@ -42,7 +44,7 @@ type Job = {
 };
 
 type StoryBlock = {
-  block: number;
+  index: number;
   text: string;
   imageBase64?: string | null;
 };
@@ -72,7 +74,7 @@ export default function App() {
   "topic": "Kind Pigeon Hero",
   "storyBlocks": [
     {
-      "block": 0,
+      "index": 0,
       "text": "सुबह की हल्की धूप में एक छोटा गाँव जग रहा था, जहाँ एक बूढ़ा किसान अपने खेत में काम कर रहा था।",
       "imagePrompt": "A 3D cartoon of a small rural village ...",
       "animationPrompt": "Slow 3D camera pan ..."
@@ -84,7 +86,6 @@ export default function App() {
   // For fetching voices:
   const [voices, setVoices] = useState<VoiceModel[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<string>("");
-
   // Loading & errors
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -115,6 +116,38 @@ export default function App() {
     captions: true,
     transitions: true,
   });
+
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const handleVoiceChange = (voiceId: string) => {
+    const voice = voices.find((v) => v.VoiceId === voiceId);
+    if (!voice) return;
+
+    setSelectedVoice(voiceId);
+
+    // Reset current audio
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    const audio = new Audio(voice.PreviewUrl);
+    audio.onended = () => setIsPlaying(false);
+    audioRef.current = audio;
+  };
+
+  const toggleAudio = () => {
+    if (!audioRef.current) return;
+
+    if (audioRef.current.paused) {
+      audioRef.current.play();
+      setIsPlaying(true);
+    } else {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
 
   const fetchJobs = async () => {
     try {
@@ -188,7 +221,7 @@ export default function App() {
       setError(null);
       setLoading(true);
       try {
-        const res = await fetch("http://localhost:8000/voices/?lang_code=hi");
+        const res = await fetch("http://localhost:8000/voices");
         if (!res.ok) {
           const errorJson = await res.json();
           throw new Error(errorJson.message);
@@ -197,7 +230,16 @@ export default function App() {
         if (response.success && Array.isArray(response.data)) {
           setVoices(response.data);
           if (response.data.length > 0) {
-            setSelectedVoice(response.data[0].ShortName);
+            setSelectedVoice(response.data[0].VoiceId);
+            // Reset current audio
+            if (audioRef.current) {
+              audioRef.current.pause();
+              audioRef.current.currentTime = 0;
+            }
+
+            const audio = new Audio(response.data[0].PreviewUrl);
+            audio.onended = () => setIsPlaying(false);
+            audioRef.current = audio;
           }
         } else {
           throw new Error("Invalid voice response structure");
@@ -256,7 +298,7 @@ export default function App() {
         setRefinedStory(response.data.storyBlocks);
         // Reset selectedVoice if needed
         if (voices.length > 0) {
-          setSelectedVoice(voices[0].ShortName);
+          setSelectedVoice(voices[0].VoiceId);
         }
       } else {
         throw new Error("Invalid scene response structure");
@@ -382,6 +424,7 @@ export default function App() {
     font,
     fontSize,
     applyCaption,
+    refinedStory,
   ]);
 
   const toggleSection = (section: keyof typeof expandedSections) => {
@@ -567,6 +610,85 @@ export default function App() {
               </button>
             </div>
           </div>
+
+          {/* Voice Selector */}
+          <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
+                <Volume2 className="w-5 h-5 text-white" />
+              </div>
+              <h2 className="text-2xl font-semibold text-white">
+                Voice Selection
+              </h2>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-slate-300 font-medium mb-2">
+                  Narrator Voice
+                </label>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={toggleAudio}
+                    className="text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={loading}
+                  >
+                    {isPlaying ? (
+                      <Pause className="w-10 h-10 bg-blue-600 p-2 rounded-full" />
+                    ) : (
+                      <Play className="w-10 h-10 bg-blue-600 p-2 rounded-full" />
+                    )}
+                  </button>
+
+                  <div className="relative w-full">
+                    <select
+                      className="w-full appearance-none p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200"
+                      value={selectedVoice}
+                      onChange={(e) => handleVoiceChange(e.target.value)}
+                    >
+                      {voices.map((v) => (
+                        <option key={v.VoiceId} value={v.VoiceId}>
+                          {v.Name} ({v.Gender?.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+
+                    {/* Custom arrow icon (SVG) */}
+                    <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
+                      <svg
+                        className="w-4 h-4 text-slate-300"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M19 9l-7 7-7-7"
+                        />
+                      </svg>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={handleGenerateVoiceCaption}
+                  disabled={loading || refinedStory.length === 0}
+                  className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
+                >
+                  {loading ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Play className="w-5 h-5" />
+                  )}
+                  Generate Voice & Captions
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Refined Scenes Preview */}
           {refinedStory.length > 0 && (
             <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
@@ -584,12 +706,12 @@ export default function App() {
               <div className="max-h-48 overflow-auto custom-scrollbar space-y-3">
                 {refinedStory.map((s: StoryBlock) => (
                   <div
-                    key={s.block}
+                    key={s.index}
                     className="p-4 bg-slate-900/30 border border-slate-600/30 rounded-xl"
                   >
                     <div className="flex items-start gap-3">
                       <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium">
-                        Scene {s.block}
+                        Scene {s.index + 1}
                       </span>
                       <p className="text-slate-300 text-sm leading-relaxed flex-1">
                         {s.text}
@@ -601,51 +723,6 @@ export default function App() {
             </div>
           )}
 
-          {/* Voice Selector */}
-          {refinedStory.length > 0 && (
-            <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg">
-                  <Volume2 className="w-5 h-5 text-white" />
-                </div>
-                <h2 className="text-2xl font-semibold text-white">
-                  Voice Selection
-                </h2>
-              </div>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-300 font-medium mb-2">
-                    Narrator Voice
-                  </label>
-                  <select
-                    className="w-full p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200"
-                    value={selectedVoice}
-                    onChange={(e) => setSelectedVoice(e.target.value)}
-                  >
-                    {voices.map((v) => (
-                      <option key={v.ShortName} value={v.ShortName}>
-                        {v.FriendlyName} ({v.ShortName})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-end">
-                  <button
-                    onClick={handleGenerateVoiceCaption}
-                    disabled={loading}
-                    className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
-                  >
-                    {loading ? (
-                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <Play className="w-5 h-5" />
-                    )}
-                    Generate Voice & Captions
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
           {/* Configuration & Preview Row */}
           {shortConfig && refinedStory.length > 0 && (
             <div className="grid lg:grid-cols-5 gap-8">

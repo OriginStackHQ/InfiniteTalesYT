@@ -2,7 +2,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 
 class StoryBlock(BaseModel):
-    block: int
+    index: int
     text: str
     imagePrompt: Optional[str] = None
     animationPrompt: Optional[str] = None

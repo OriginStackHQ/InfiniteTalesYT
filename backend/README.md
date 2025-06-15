@@ -8,7 +8,7 @@ A minimal FastAPI backend setup.
 
 ```bash
 python -m venv venv
-.venv\Scripts\Activate.ps1  # Windows: venv\Scripts\activate
+venv\Scripts\Activate.ps1  # Windows
 ```
 
 ### 2. Install Dependencies

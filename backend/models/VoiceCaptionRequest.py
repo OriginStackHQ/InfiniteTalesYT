@@ -2,7 +2,7 @@ from pydantic import BaseModel
 from typing import List
     
 class SceneItem(BaseModel):
-    block: int
+    index: int
     text: str
     
 class VoiceCaptionRequest(BaseModel):

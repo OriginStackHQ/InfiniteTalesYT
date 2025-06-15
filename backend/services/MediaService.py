@@ -14,7 +14,12 @@ from tempfile import NamedTemporaryFile
 from pathlib import Path
 from models.VoiceCaptionRequest import SceneItem, VoiceCaptionRequest
 from models.VoiceCaptionResponse import VoiceCaption, VoiceCaptionResponse, Word, CaptionSegment, Caption
+from models.VoiceModel import VoiceModel
 from typing import List, Dict, Any
+from dotenv import load_dotenv
+
+# Load the .env file
+load_dotenv()
 
 # Try to import Vosk components
 try:
@@ -34,9 +39,11 @@ class MediaService:
     def __init__(self):
         print("MediaService initialized")
         self.file_path = Path(os.path.dirname(os.path.abspath(__file__))) / "data.json"
-        self.model_folder_path = Path(os.path.dirname(os.path.abspath(__file__))) / "vosk-model"
+        self.model_folder_path = Path(os.path.dirname(os.path.abspath(__file__))) / "vosk-model-hi"
         # Regular expression to extract runs of Devanagari letters
         self.WORD_RE = re.compile(r"[\u0900-\u097F]+")
+        self.eleven_labs_api_key = os.getenv("ELEVEN_LABS_API_KEY")
+        self.voice_ids = ["Nh2zY9kknu6z4pZy6FhD","zT03pEAEi0VHKciJODfn","d0grukerEzs069eKIauC"]
 
     async def generate_google_fx(self, prompt: str, image_count: int = 1, 
                             aspect_ratio: str = "IMAGE_ASPECT_RATIO_PORTRAIT", 
@@ -169,8 +176,8 @@ class MediaService:
 
     async def update_auth_token_image_fx(self):
         """Update ImageFX authentication token using requests (synchronous)."""
-        print("Updating auth token")
         try:
+            print("Updating ImageFX authentication token...")
             with open(self.file_path) as f:
                 config_data = json.load(f)
 
@@ -205,8 +212,8 @@ class MediaService:
 
             with open(self.file_path, 'w') as f:
                 json.dump(config_data, f, indent=2)
-                
-            print("Auth token updated successfully")
+
+            print("ImageFX authentication token updated successfully")
 
         except requests.exceptions.RequestException as e:
             raise Exception(f"Network error updating auth token: {str(e)}")
@@ -341,8 +348,8 @@ class MediaService:
         if self.model_folder_path.exists():
             return
 
-        model_url = "https://alphacephei.com/vosk/models/vosk-model-small-hi-0.22.zip"
-        zip_path = self.model_folder_path.parent / "vosk-model-small-hi-0.22.zip"
+        model_url = "https://alphacephei.com/vosk/models/vosk-model-hi-0.22.zip"
+        zip_path = self.model_folder_path.parent / "vosk-model-hi-0.22.zip"
 
         try:
             print("Downloading Vosk model...")
@@ -358,7 +365,7 @@ class MediaService:
             raise Exception(f"Failed to extract Vosk model: {e}")
 
         # Rename extracted folder
-        extracted_folder = self.model_folder_path.parent / "vosk-model-small-hi-0.22"
+        extracted_folder = self.model_folder_path.parent / "vosk-model-hi-0.22"
         if extracted_folder.exists():
             extracted_folder.rename(self.model_folder_path)
         else:
@@ -376,7 +383,6 @@ class MediaService:
             raise Exception("Vosk is not installed")
 
         self.download_and_extract_vosk_model()
-
         try:
             model = Model(str(self.model_folder_path))
         except Exception as e:
@@ -548,9 +554,6 @@ class MediaService:
         Generate voice and captions for the provided scenes.
         """
         normalized_text = self.normalize_line(request.text)
-        if not normalized_text.strip():
-            Exception("No text provided")
-
         json_data_str = self.process_text(normalized_text, 4)
         json_data = json.loads(json_data_str)
 
@@ -587,15 +590,17 @@ class MediaService:
         )
         return mp3_data, caption
     
-    async def generate_voice_and_caption(self, request: VoiceCaptionRequest, voice_id: str, api_key: str):
+    async def generate_voice_and_caption(self, request: VoiceCaptionRequest):
         """
         Generate voice and captions for the provided text.
         """
         voiceCaptions: List[VoiceCaption] = []
 
+        voice_id = request.narrator
+
         for scene in request.scenes:
             # Generate voice and captions
-            mp3_data, caption = await self.get_voice_and_caption(scene, voice_id, api_key)
+            mp3_data, caption = await self.get_voice_and_caption(scene, voice_id, self.eleven_labs_api_key)
 
             if caption.segments:
                 duration = int(math.ceil(caption.segments[-1].end / 1000))
@@ -606,7 +611,7 @@ class MediaService:
             voice_base64: str = base64.b64encode(mp3_data.getvalue()).decode("utf-8")
 
             voiceCaptions.append(VoiceCaption(
-                index=scene.block,
+                index=scene.index,
                 voiceBase64=voice_base64,
                 contentType="audio/mpeg",
                 duration=duration,
@@ -616,3 +621,47 @@ class MediaService:
         return VoiceCaptionResponse(
             scenes=voiceCaptions
         )
+
+    async def get_voices(self):
+        try:
+            voice_infos : List[VoiceModel] = []
+
+            for vid in self.voice_ids:
+                response = requests.get(
+                    f"https://api.elevenlabs.io/v1/voices/{vid}",
+                    headers={
+                        "xi-api-key": self.eleven_labs_api_key  # Note: lowercase key name as expected by API
+                    },
+                    timeout=30
+                )
+
+                response.raise_for_status()
+                voice = response.json()
+
+                # Case 1: Voice is already labeled as Hindi
+                if voice.get("labels", {}).get("language") == "hi":
+                    preview_url = voice.get("preview_url")
+                
+                # Case 2: Check inside verified_languages
+                for lang in voice.get("verified_languages", []):
+                    if lang.get("language") == "hi":
+                        preview_url =  lang.get("preview_url")
+
+                voice_infos.append(VoiceModel(
+                    VoiceId=voice["voice_id"],
+                    Name=voice["name"],
+                    PreviewUrl=None if preview_url is None else preview_url,
+                    Gender=voice.get("labels", {}).get("gender"),
+                    Accent=voice.get("labels", {}).get("accent"),
+                    Age=voice.get("labels", {}).get("age"),
+                    Descriptive=voice.get("labels", {}).get("descriptive"),
+                    Language=voice.get("labels", {}).get("language"),
+                    UseCase=voice.get("labels", {}).get("use_case"),
+                ))
+
+            return voice_infos
+        
+        except requests.exceptions.RequestException as e:
+            raise Exception(f"Failed to get voices: {str(e)}")
+        except Exception as e:
+            raise Exception(f"Failed to get voices: {e}")

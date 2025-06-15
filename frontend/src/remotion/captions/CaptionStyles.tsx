@@ -50,7 +50,7 @@ export const LineCaption: React.FC<CaptionStyleProps> = ({
             borderRadius: 10,
             margin: "0 4px",
             padding: "5px 5px",
-            transition: "all 0.2s ease",
+            transition: "all 0.1s ease",
             textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
           }}
         >
@@ -141,7 +141,7 @@ export const SpotlightCaption: React.FC<CaptionStyleProps> = ({
           fontWeight: "bold",
           color: captionStyle.textColor,
           textShadow: "2px 2px 4px rgba(0, 0, 0, 0.8)",
-          transition: "transform 0.3s ease, opacity 0.3s ease",
+          transition: "transform 0.1s ease, opacity 0.1s ease",
           display: "inline-block",
         }}
       >
