@@ -2,11 +2,12 @@ from fastapi import  Depends,  HTTPException, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from services.StoryService import StoryService
 from models.StoryRequest import StoryRequest
+from models.ImageRequest import ImageRequest
+from models.ImageResponse import ImageResponse
 from models.VoiceCaptionRequest import VoiceCaptionRequest
 from models.VoiceCaptionResponse import VoiceCaptionResponse
 from services.MediaService import MediaService
 from utils.response import response
-from typing import List
 from fastapi.exceptions import RequestValidationError
 from utils.exceptions import http_exception_handler, validation_exception_handler
 import uvicorn
@@ -35,7 +36,7 @@ async def root():
 def get_story_service():
     return StoryService()
 
-@app.post("/refine-story", response_model=StoryRequest)
+@app.post("/refine-and-images", response_model=StoryRequest)
 async def refine_story(data: StoryRequest, story_service: StoryService = Depends(get_story_service)):
     try:
         data = await story_service.refine_story(data)
@@ -48,6 +49,18 @@ async def refine_story(data: StoryRequest, story_service: StoryService = Depends
     
 def get_media_service():
     return MediaService()
+
+@app.post("/generate-image", response_model=ImageResponse)
+async def generate_voice_and_caption(request: ImageRequest, media_service: MediaService = Depends(get_media_service)):
+    try:
+        data = await media_service.generate_image(request)
+        return response(message="Image generated successfully", data=data)
+    
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/voice-and-caption", response_model=VoiceCaptionResponse)
 async def generate_voice_and_caption(request: VoiceCaptionRequest, media_service: MediaService = Depends(get_media_service)):

@@ -12,6 +12,8 @@ import zipfile
 import unicodedata
 from tempfile import NamedTemporaryFile
 from pathlib import Path
+from models.ImageRequest import ImageRequest
+from models.ImageResponse import ImageResponse
 from models.VoiceCaptionRequest import SceneItem, VoiceCaptionRequest
 from models.VoiceCaptionResponse import VoiceCaption, VoiceCaptionResponse, Word, CaptionSegment, Caption
 from models.VoiceModel import VoiceModel
@@ -220,7 +222,10 @@ class MediaService:
         except Exception as e:
             raise Exception(f"Failed to update auth token: {str(e)}")
     
-        
+    async def generate_image(self, request: ImageRequest ) -> ImageResponse:
+        gen_images_base64: List[str] = await self.generate_google_fx(request.text)
+        return ImageResponse(text=request.text, imageBase64=gen_images_base64[0])
+
     def normalize_line(self, line: str) -> str:
         """
         Replace or remove symbols that may confuse TTS engines (e.g., ElevenLabs).
@@ -590,7 +595,7 @@ class MediaService:
         )
         return mp3_data, caption
     
-    async def generate_voice_and_caption(self, request: VoiceCaptionRequest):
+    async def generate_voice_and_caption(self, request: VoiceCaptionRequest) -> VoiceCaptionResponse:
         """
         Generate voice and captions for the provided text.
         """
@@ -613,7 +618,7 @@ class MediaService:
             voiceCaptions.append(VoiceCaption(
                 index=scene.index,
                 voiceBase64=voice_base64,
-                contentType="audio/mpeg",
+                contentType="audio/mp3",
                 duration=duration,
                 caption=caption
             ))
