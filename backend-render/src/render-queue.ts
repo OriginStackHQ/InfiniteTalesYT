@@ -50,17 +50,19 @@ export const makeRenderQueue = ({
         inputProps: shortConfig,
       });
 
-      const outputLocation = path.join(rendersDir, `${job.title}-${jobId}.mov`);
+      const safeTitle = job.title.replace(/[^a-z0-9_\- ]/gi, "_");
+      const outputLocation = path.join(rendersDir, `${safeTitle}-${jobId}.mp4`);
 
       await renderMedia({
         cancelSignal,
         serveUrl,
         composition,
         inputProps: shortConfig,
-        codec: "prores",
-        pixelFormat: "yuva444p10le",
-        proResProfile: "4444",
-        imageFormat: "png",
+        codec: "h264",
+        // codec: "prores",
+        // pixelFormat: "yuva444p10le",
+        // proResProfile: "4444",
+        // imageFormat: "png",
         onProgress: (progress) => {
           console.info(
             `${jobId} render progress:`,
@@ -84,7 +86,7 @@ export const makeRenderQueue = ({
       jobs.set(jobId, {
         status: "completed",
         title: job.title,
-        videoUrl: `http://localhost:${port}/files/${job.title}-${jobId}.mov`,
+        videoUrl: `http://localhost:${port}/files/${safeTitle}-${jobId}.mp4`,
         data: job.data,
         createdAt: job.createdAt,
         completedAt: new Date(),
