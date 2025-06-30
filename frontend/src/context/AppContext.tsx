@@ -72,32 +72,6 @@ export function useAppContext(): AppContextType {
   return context;
 }
 
-export const tempJobs: Job[] = [
-  {
-    id: "job-001",
-    title: "Sample Render A",
-    status: "queued",
-    createdAt: "2025-06-16T08:00:00.000Z",
-    // queued jobs have no completedAt/failedAt/videoUrl/fileSize yet
-  },
-  {
-    id: "job-002",
-    title: "Sample Render B",
-    status: "in-progress",
-    createdAt: "2025-06-16T07:45:00.000Z",
-    // in-progress: still running, no completedAt/failedAt/videoUrl/fileSize
-  },
-  {
-    id: "job-003",
-    title: "Sample Render C",
-    status: "completed",
-    createdAt: "2025-06-15T12:30:00.000Z",
-    completedAt: "2025-06-15T12:45:30.000Z",
-    videoUrl: "https://example.com/videos/renderC.mp4",
-    fileSize: 125_000_000, // in bytes, e.g., ~119 MB
-  },
-];
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [shortConfig, setShortConfig] =
     useState<ShortConfig>(defaultShortConfig);
@@ -113,7 +87,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     useState<StoryBlock | null>(null);
   const [scenes, setScenes] = useState<Scene[]>([]);
   const [fps, setFps] = useState<number>(30);
-  const [jobs, setJobs] = useState<Job[]>(tempJobs);
+  const [jobs, setJobs] = useState<Job[]>([]);
 
   const updateShortConfig = (updates: Partial<ShortConfig>) => {
     setShortConfig((prev) => ({ ...prev, ...updates }));
