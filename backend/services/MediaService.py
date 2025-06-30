@@ -45,7 +45,7 @@ class MediaService:
         # Regular expression to extract runs of Devanagari letters
         self.WORD_RE = re.compile(r"[\u0900-\u097F]+")
         self.eleven_labs_api_key = os.getenv("ELEVEN_LABS_API_KEY")
-        self.voice_ids = ["Nh2zY9kknu6z4pZy6FhD","zT03pEAEi0VHKciJODfn","d0grukerEzs069eKIauC"]
+        self.voice_ids = ["FmBhnvP58BK0vz65OOj7","zT03pEAEi0VHKciJODfn","d0grukerEzs069eKIauC"]
 
     async def generate_google_fx(self, prompt: str, image_count: int = 1, 
                             aspect_ratio: str = "IMAGE_ASPECT_RATIO_PORTRAIT", 

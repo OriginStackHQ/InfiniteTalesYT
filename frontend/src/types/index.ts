@@ -24,7 +24,10 @@ export interface Job {
 export interface StoryBlock {
   index: number;
   text: string;
-  imageBase64: string;
+  imageBase64: string | null;
+  imagePrompt: string;
+  animationBase64: string | null;
+  animationPrompt: string;
 }
 
 export interface ParsedStory {

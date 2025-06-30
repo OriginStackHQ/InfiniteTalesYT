@@ -14,14 +14,6 @@ class StoryService:
         return line
 
     async def refine_story(self, data: StoryRequest):
-        
-        media_service = MediaService()
-
-        images_base64: List[str] = []
-        for block in data.storyBlocks:
-            image_prompt = block.imagePrompt
-            gen_images_base64: List[str] = await media_service.generate_google_fx(image_prompt)
-            images_base64.append(gen_images_base64[0])
 
         scenes: List[StoryBlock] = []
         for index, block in enumerate(data.storyBlocks):
@@ -30,7 +22,7 @@ class StoryService:
             scenes.append(StoryBlock(
                 index=block.index,
                 text=normalized_text,
-                imageBase64=images_base64[index]
+                imagePrompt=block.imagePrompt,
+                animationPrompt=block.animationPrompt,
             ))
-
         return StoryResponse(topic=data.topic, storyBlocks=scenes)

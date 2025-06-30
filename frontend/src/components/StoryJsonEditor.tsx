@@ -1,5 +1,7 @@
+import { useEffect } from "react";
 import { Trash2, Upload, Zap } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
+import { JsonEditor } from "json-edit-react";
 
 interface StoryJsonEditorProps {
   onRefine: () => void;
@@ -12,7 +14,21 @@ export function StoryJsonEditor({
   loading,
   setLoading,
 }: StoryJsonEditorProps) {
-  const { storyJson, setStoryJson, resetAll } = useAppContext();
+  const { storyJson, setStoryJson, parsedStory, setParsedStory, resetAll } =
+    useAppContext();
+
+  useEffect(() => {
+    try {
+      const parsed = JSON.parse(storyJson);
+      setParsedStory(parsed);
+    } catch {
+      console.error("Invalid JSON.");
+    }
+  }, [storyJson]);
+
+  const handleSetData = (newData: object) => {
+    setStoryJson(JSON.stringify(newData, null, 2));
+  };
 
   return (
     <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
@@ -22,15 +38,22 @@ export function StoryJsonEditor({
         </div>
         <h2 className="text-2xl font-semibold text-white">Story JSON Editor</h2>
       </div>
-      <div className="relative">
-        <textarea
-          className="w-full h-48 bg-slate-900/50 border border-slate-600/50 rounded-xl p-4 text-slate-100 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 disabled:opacity-50 transition-all duration-200 backdrop-blur-sm"
-          value={storyJson}
-          onChange={(e) => setStoryJson(e.target.value)}
-          placeholder="Paste your story JSON here..."
-          aria-label="Story JSON editor"
-        />
+
+      <div className="bg-slate-900/40 border border-slate-600/50 rounded-xl p-4 max-h-[400px] overflow-auto">
+        {parsedStory ? (
+          <JsonEditor
+            data={parsedStory}
+            setData={handleSetData}
+            rootName=""
+            rootFontSize="14px"
+          />
+        ) : (
+          <p className="text-red-400 text-sm">
+            Invalid JSON. Please check the input.
+          </p>
+        )}
       </div>
+
       <div className="flex justify-between items-center mt-4">
         <button
           onClick={onRefine}

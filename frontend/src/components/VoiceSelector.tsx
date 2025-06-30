@@ -1,5 +1,6 @@
 import { Volume2, Play, Pause } from "lucide-react";
 import type { VoiceModel } from "../types";
+import { useAppContext } from "../context/AppContext";
 
 interface VoiceSelectorProps {
   voices: VoiceModel[];
@@ -20,6 +21,7 @@ export function VoiceSelector({
   onToggleAudio,
   onGenerateVoiceCaption,
 }: VoiceSelectorProps) {
+  const { refinedStory } = useAppContext();
   return (
     <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
       <div className="flex items-center gap-3 mb-4">
@@ -86,7 +88,9 @@ export function VoiceSelector({
         <div className="flex items-end">
           <button
             onClick={onGenerateVoiceCaption}
-            disabled={loading}
+            disabled={
+              loading || refinedStory.some((block) => !block.imageBase64)
+            }
             className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
             aria-label="Generate voice and captions"
           >

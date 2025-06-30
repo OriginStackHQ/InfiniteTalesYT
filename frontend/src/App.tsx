@@ -24,6 +24,9 @@ function AppContent() {
     shortConfig,
     setShortConfig,
     refinedStory,
+    parsedStory,
+    setRefinedStory,
+    setStoryJson,
     voices,
     selectedVoice,
     setSelectedVoice,
@@ -31,7 +34,6 @@ function AppContent() {
     fps,
     selectedStoryBlock,
     setSelectedStoryBlock,
-    parsedStory,
   } = useAppContext();
 
   // Hooks
@@ -151,6 +153,32 @@ function AppContent() {
       return;
     }
 
+    const newStoryBlock = {
+      ...selectedStoryBlock,
+      imagePrompt: prompt,
+      imageBase64: null,
+    };
+
+    const newRefinedStory = refinedStory.map((s) => {
+      if (s.index === newStoryBlock.index) {
+        return newStoryBlock;
+      }
+      return s;
+    });
+
+    setRefinedStory(newRefinedStory);
+
+    setStoryJson(
+      JSON.stringify(
+        {
+          ...parsedStory,
+          storyBlocks: newRefinedStory,
+        },
+        null,
+        2
+      )
+    );
+
     const isUpdated = await generateImage(prompt);
     if (isUpdated) {
       closeRegenerateModal();
@@ -211,11 +239,7 @@ function AppContent() {
 
       {isRegenerateModalOpen && selectedStoryBlock && (
         <RegenerateModal
-          initialPrompt={
-            selectedStoryBlock
-              ? parsedStory.storyBlocks[selectedStoryBlock.index].imagePrompt
-              : ""
-          }
+          initialPrompt={selectedStoryBlock.imagePrompt || ""}
           loading={combinedLoading}
           onClose={closeRegenerateModal}
           onRegenerate={handleRegenerateImage}
