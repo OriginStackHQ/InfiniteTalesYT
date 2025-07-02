@@ -7,6 +7,7 @@ import { StoryJsonEditor } from "./components/StoryJsonEditor";
 import { RefinedScenesPreview } from "./components/RefinedScenesPreview";
 import { VoiceSelector } from "./components/VoiceSelector";
 import { ModalImagePreview } from "./components/ModalImagePreview";
+import { ModalVideoPreview } from "./components/ModalVideoPreview";
 import { RegenerateModal } from "./components/RegenerateModal";
 import { ConfigurationPanel } from "./components/ConfigurationPanel";
 import { PreviewPanel } from "./components/PreviewPanel";
@@ -16,8 +17,9 @@ import { useGenerateVoiceCaption } from "./hooks/useGenerateVoiceCaption";
 import { useFetchJobs } from "./hooks/useFetchJobs";
 import { useFetchVoices } from "./hooks/useFetchVoices";
 import { useGenerateImage } from "./hooks/useGenerateImage";
+import { useGenerateVideo } from "./hooks/useGenerateVideo";
 import { useAudioPlayer } from "./hooks/useAudioPlayer";
-import type { Scene, StoryBlock } from "./types";
+import type { Scene, StoryBlock, StoryBlockRaw } from "./types";
 
 function AppContent() {
   const {
@@ -80,14 +82,25 @@ function AppContent() {
     setError: setImageError,
   } = useGenerateImage();
 
+  const {
+    generateVideo,
+    loading: videoLoading,
+    error: videoError,
+    setError: setVideoError,
+  } = useGenerateVideo();
+
   const { isPlaying, setAudio, toggleAudio } = useAudioPlayer();
 
   // Local state
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-  const [modalImage, setModalImage] = useState<string>("");
-  const [isRegenerateModalOpen, setRegenerateIsModalOpen] =
+  const [isImageModalOpen, setIsImageModalOpen] = useState<boolean>(false);
+  const [isVideoModalOpen, setIsVideoModalOpen] = useState<boolean>(false);
+  const [modalImage, setImageModal] = useState<string>("");
+  const [modalVideo, setVideoModal] = useState<string>("");
+  const [isRegenerateImageModalOpen, setRegenerateImageModalOpen] =
+    useState<boolean>(false);
+  const [isRegenerateVideoModalOpen, setRegenerateVideoModalOpen] =
     useState<boolean>(false);
 
   // Combine all errors
@@ -97,6 +110,7 @@ function AppContent() {
     voicesError ||
     refineStoryError ||
     imageError ||
+    videoError ||
     renderError ||
     voiceCaptionError;
 
@@ -106,6 +120,7 @@ function AppContent() {
     voicesLoading ||
     refineStoryLoading ||
     imageLoading ||
+    videoLoading ||
     renderLoading ||
     voiceCaptionLoading;
 
@@ -114,6 +129,7 @@ function AppContent() {
     setJobsError(null);
     setVoicesError(null);
     setImageError(null);
+    setVideoError(null);
     setRefineStoryError(null);
     setRenderError(null);
     setVoiceCaptionError(null);
@@ -127,23 +143,43 @@ function AppContent() {
     setAudio(voice.PreviewUrl);
   };
 
-  const openModal = (imageBase64: string) => {
-    setModalImage(imageBase64);
-    setIsModalOpen(true);
+  const openImageModal = (imageBase64: string) => {
+    setImageModal(imageBase64);
+    setIsImageModalOpen(true);
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setModalImage("");
+  const openVideoModal = (videoBase64: string) => {
+    setVideoModal(videoBase64);
+    setIsVideoModalOpen(true);
   };
 
-  const openRegenerateModal = (s: StoryBlock) => {
+  const closeVideoModal = () => {
+    setIsVideoModalOpen(false);
+    setVideoModal("");
+  };
+
+  const closeImageModal = () => {
+    setIsImageModalOpen(false);
+    setImageModal("");
+  };
+
+  const openRegenerateImageModal = (s: StoryBlock) => {
     setSelectedStoryBlock(s);
-    setRegenerateIsModalOpen(true);
+    setRegenerateImageModalOpen(true);
   };
 
-  const closeRegenerateModal = () => {
-    setRegenerateIsModalOpen(false);
+  const closeRegenerateImageModal = () => {
+    setRegenerateImageModalOpen(false);
+    setSelectedStoryBlock(null);
+  };
+
+  const openRegenerateVideoModal = (s: StoryBlock) => {
+    setSelectedStoryBlock(s);
+    setRegenerateVideoModalOpen(true);
+  };
+
+  const closeRegenerateVideoModal = () => {
+    setRegenerateVideoModalOpen(false);
     setSelectedStoryBlock(null);
   };
 
@@ -172,7 +208,14 @@ function AppContent() {
       JSON.stringify(
         {
           ...parsedStory,
-          storyBlocks: newRefinedStory,
+          storyBlocks: newRefinedStory.map(
+            ({ index, text, imagePrompt, videoPrompt }) => ({
+              index,
+              text,
+              imagePrompt,
+              videoPrompt,
+            })
+          ),
         },
         null,
         2
@@ -181,7 +224,60 @@ function AppContent() {
 
     const isUpdated = await generateImage(prompt);
     if (isUpdated) {
-      closeRegenerateModal();
+      closeRegenerateImageModal();
+    }
+  };
+
+  const handleRegenerateVideo = async (prompt: string) => {
+    if (!selectedStoryBlock) {
+      setError("Please select a story block first.");
+      return;
+    }
+
+    if (!selectedStoryBlock.imageBase64) {
+      setError("Please generate an image first.");
+      return;
+    }
+
+    const newStoryBlock = {
+      ...selectedStoryBlock,
+      videoPrompt: prompt,
+      videoBase64: null,
+    };
+
+    const newRefinedStory = refinedStory.map((s) => {
+      if (s.index === newStoryBlock.index) {
+        return newStoryBlock;
+      }
+      return s;
+    });
+
+    setRefinedStory(newRefinedStory);
+
+    setStoryJson(
+      JSON.stringify(
+        {
+          ...parsedStory,
+          storyBlocks: newRefinedStory.map(
+            ({ index, text, imagePrompt, videoPrompt }) => ({
+              index,
+              text,
+              imagePrompt,
+              videoPrompt,
+            })
+          ),
+        },
+        null,
+        2
+      )
+    );
+
+    const isUpdated = await generateVideo(
+      prompt,
+      selectedStoryBlock.imageBase64
+    );
+    if (isUpdated) {
+      closeRegenerateImageModal();
     }
   };
 
@@ -189,8 +285,7 @@ function AppContent() {
     if (!scenes.length) return;
 
     const scenesForShort = scenes.map((scene: Scene, index) => ({
-      video:
-        "https://www.shutterstock.com/shutterstock/videos/3802080493/preview/stock-footage-breathtaking-vertical-video-aspect-ratio-from-a-drone-capturing-the-scenic-view-of-a-river.webm",
+      video: "data:video/mp4;base64," + refinedStory[index].videoBase64,
       image: "data:image/jpeg;base64," + refinedStory[index].imageBase64,
       voice: {
         url: "data:audio/mp3;base64," + scene.voiceBase64,
@@ -233,16 +328,29 @@ function AppContent() {
       </div>
 
       {/* Modals */}
-      {isModalOpen && (
-        <ModalImagePreview imageBase64={modalImage} onClose={closeModal} />
+      {isImageModalOpen && (
+        <ModalImagePreview imageBase64={modalImage} onClose={closeImageModal} />
       )}
 
-      {isRegenerateModalOpen && selectedStoryBlock && (
+      {isRegenerateImageModalOpen && selectedStoryBlock && (
         <RegenerateModal
           initialPrompt={selectedStoryBlock.imagePrompt || ""}
           loading={combinedLoading}
-          onClose={closeRegenerateModal}
+          onClose={closeRegenerateImageModal}
           onRegenerate={handleRegenerateImage}
+        />
+      )}
+
+      {isVideoModalOpen && (
+        <ModalVideoPreview videoBase64={modalVideo} onClose={closeVideoModal} />
+      )}
+
+      {isRegenerateVideoModalOpen && selectedStoryBlock && (
+        <RegenerateModal
+          initialPrompt={selectedStoryBlock.videoPrompt || ""}
+          loading={combinedLoading}
+          onClose={closeRegenerateVideoModal}
+          onRegenerate={handleRegenerateVideo}
         />
       )}
 
@@ -269,8 +377,10 @@ function AppContent() {
           {refinedStory.length > 0 && (
             <RefinedScenesPreview
               refinedStory={refinedStory}
-              onImageClick={openModal}
-              onRegenerateClick={openRegenerateModal}
+              onImageClick={openImageModal}
+              onRegenerateImageClick={openRegenerateImageModal}
+              onVideoClick={openVideoModal}
+              onRegenerateVideoClick={openRegenerateVideoModal}
             />
           )}
 

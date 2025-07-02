@@ -23,6 +23,6 @@ class StoryService:
                 index=block.index,
                 text=normalized_text,
                 imagePrompt=block.imagePrompt,
-                animationPrompt=block.animationPrompt,
+                videoPrompt=block.videoPrompt,
             ))
         return StoryResponse(topic=data.topic, storyBlocks=scenes)

@@ -5,7 +5,7 @@ class StoryBlock(BaseModel):
     index: int
     text: str
     imagePrompt: Optional[str] = None
-    animationPrompt: Optional[str] = None
+    videoPrompt: Optional[str] = None
 
 class StoryRequest(BaseModel):
     topic: str

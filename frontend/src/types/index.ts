@@ -26,8 +26,8 @@ export interface StoryBlock {
   text: string;
   imageBase64: string | null;
   imagePrompt: string;
-  animationBase64: string | null;
-  animationPrompt: string;
+  videoBase64: string | null;
+  videoPrompt: string;
 }
 
 export interface ParsedStory {
@@ -39,7 +39,12 @@ export interface StoryBlockRaw {
   index: number;
   text: string;
   imagePrompt: string;
-  animationPrompt: string;
+  videoPrompt: string;
+}
+
+export interface FullParsedStory {
+  topic: string;
+  storyBlocks: StoryBlock[];
 }
 
 export interface Word {

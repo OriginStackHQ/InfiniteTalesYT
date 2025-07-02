@@ -4,6 +4,8 @@ from services.StoryService import StoryService
 from models.StoryRequest import StoryRequest
 from models.ImageRequest import ImageRequest
 from models.ImageResponse import ImageResponse
+from models.VideoRequest import VideoRequest
+from models.VideoResponse import VideoResponse
 from models.VoiceCaptionRequest import VoiceCaptionRequest
 from models.VoiceCaptionResponse import VoiceCaptionResponse
 from services.MediaService import MediaService
@@ -51,10 +53,22 @@ def get_media_service():
     return MediaService()
 
 @app.post("/generate-image", response_model=ImageResponse)
-async def generate_voice_and_caption(request: ImageRequest, media_service: MediaService = Depends(get_media_service)):
+async def generate_image(request: ImageRequest, media_service: MediaService = Depends(get_media_service)):
     try:
         data = await media_service.generate_image(request)
         return response(message="Image generated successfully", data=data)
+    
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/generate-video", response_model=VideoResponse)
+async def generate_video(request: VideoRequest, media_service: MediaService = Depends(get_media_service)):
+    try:
+        data = await media_service.generate_video(request)
+        return response(message="Video generated successfully", data=data)
     
     except HTTPException as e:
         raise e

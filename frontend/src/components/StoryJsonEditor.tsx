@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Trash2, Upload, Zap } from "lucide-react";
 import { useAppContext } from "../context/AppContext";
 import { JsonEditor } from "json-edit-react";
+import type { FullParsedStory, ParsedStory } from "../types";
 
 interface StoryJsonEditorProps {
   onRefine: () => void;
@@ -14,8 +15,15 @@ export function StoryJsonEditor({
   loading,
   setLoading,
 }: StoryJsonEditorProps) {
-  const { storyJson, setStoryJson, parsedStory, setParsedStory, resetAll } =
-    useAppContext();
+  const {
+    storyJson,
+    setStoryJson,
+    parsedStory,
+    setParsedStory,
+    refinedStory,
+    setRefinedStory,
+    resetAll,
+  } = useAppContext();
 
   useEffect(() => {
     try {
@@ -26,8 +34,64 @@ export function StoryJsonEditor({
     }
   }, [storyJson]);
 
-  const handleSetData = (newData: object) => {
-    setStoryJson(JSON.stringify(newData, null, 2));
+  const handleDownload = () => {
+    const exportData: FullParsedStory = {
+      topic: parsedStory.topic,
+      storyBlocks: refinedStory, // already of type StoryBlock[]
+    };
+
+    const json = JSON.stringify(exportData, null, 2); // Pretty JSON
+    const blob = new Blob([json], { type: "application/json" });
+
+    console.log(`Export size: ${(blob.size / (1024 * 1024)).toFixed(2)} MB`);
+
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "full_story_with_base64.json";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const text = e.target?.result as string;
+        const parsed: FullParsedStory = JSON.parse(text);
+
+        const parsedStoryRaw: ParsedStory = {
+          topic: parsed.topic,
+          storyBlocks: parsed.storyBlocks.map(
+            ({ index, text, imagePrompt, videoPrompt }) => ({
+              index,
+              text,
+              imagePrompt,
+              videoPrompt,
+            })
+          ),
+        };
+
+        setParsedStory(parsedStoryRaw);
+        setRefinedStory(parsed.storyBlocks);
+        setStoryJson(JSON.stringify(parsedStoryRaw, null, 2));
+      } catch (err: any) {
+        console.error("Invalid FullParsedStory JSON");
+      }
+    };
+
+    reader.readAsText(file);
+  };
+
+  const handleSetData = (newData: unknown) => {
+    if (typeof newData === "object" && newData !== null) {
+      setStoryJson(JSON.stringify(newData, null, 2));
+    } else {
+      console.error("Invalid JSON.");
+    }
   };
 
   return (
@@ -46,6 +110,7 @@ export function StoryJsonEditor({
             setData={handleSetData}
             rootName=""
             rootFontSize="14px"
+            maxWidth={"100%"}
           />
         ) : (
           <p className="text-red-400 text-sm">
@@ -68,6 +133,31 @@ export function StoryJsonEditor({
           )}
           Refine Story
         </button>
+        <label
+          htmlFor="upload-json"
+          className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl hover:from-yellow-700 hover:to-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl cursor-pointer"
+        >
+          <Upload className="w-5 h-5" />
+          Upload JSON
+          <input
+            id="upload-json"
+            type="file"
+            accept=".json"
+            onChange={handleUpload}
+            className="hidden"
+          />
+        </label>
+
+        <button
+          onClick={handleDownload}
+          disabled={!parsedStory}
+          className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+          aria-label="Download JSON"
+        >
+          <Upload className="w-5 h-5 rotate-180" />
+          Download JSON
+        </button>
+
         <button
           onClick={() => {
             setLoading(true);

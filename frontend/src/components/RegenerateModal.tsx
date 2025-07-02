@@ -49,7 +49,7 @@ export function RegenerateModal({
           ) : (
             <RefreshCcw className="w-5 h-5" />
           )}
-          Regenerate Image
+          Regenerate
         </button>
       </div>
     </div>

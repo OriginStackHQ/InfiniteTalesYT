@@ -57,7 +57,7 @@ const defaultStoryJson = `{
       "index": 0,
       "text": "सुबह की हल्की धूप में एक छोटा गाँव जग रहा था, जहाँ एक बूढ़ा किसान अपने खेत में काम कर रहा था।",
       "imagePrompt": "A 3D cartoon of a small rural village ...",
-      "animationPrompt": "Slow 3D camera pan ..."
+      "videoPrompt": "Slow 3D camera pan ..."
     }
   ]
 }`;

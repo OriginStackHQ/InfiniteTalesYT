@@ -25,8 +25,8 @@ export function useRefineStory() {
     try {
       payload = JSON.parse(storyJson);
       setParsedStory(payload);
-    } catch (e) {
-      console.error("JSON parse error:", e);
+    } catch (err: any) {
+      console.error("JSON parse error:", err);
       setError("Invalid JSON in story editor.");
       return;
     }

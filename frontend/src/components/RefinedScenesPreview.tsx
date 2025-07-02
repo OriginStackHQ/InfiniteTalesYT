@@ -1,16 +1,27 @@
-import { Film, ImageIcon, ImageOff, RefreshCcw } from "lucide-react";
+import {
+  Film,
+  ImageIcon,
+  ImageOff,
+  RefreshCcw,
+  Video,
+  VideoOff,
+} from "lucide-react";
 import type { StoryBlock } from "../types";
 
 interface RefinedScenesPreviewProps {
   refinedStory: StoryBlock[];
   onImageClick: (imageBase64: string) => void;
-  onRegenerateClick: (storyBlock: StoryBlock) => void;
+  onRegenerateImageClick: (storyBlock: StoryBlock) => void;
+  onVideoClick: (videoBase64: string) => void;
+  onRegenerateVideoClick: (storyBlock: StoryBlock) => void;
 }
 
 export function RefinedScenesPreview({
   refinedStory,
   onImageClick,
-  onRegenerateClick,
+  onRegenerateImageClick,
+  onVideoClick,
+  onRegenerateVideoClick,
 }: RefinedScenesPreviewProps) {
   return (
     <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
@@ -44,7 +55,26 @@ export function RefinedScenesPreview({
               </button>
               <button
                 className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors"
-                onClick={() => onRegenerateClick(s)}
+                onClick={() => onRegenerateImageClick(s)}
+                aria-label={`Regenerate image for scene ${s.index + 1}`}
+              >
+                <RefreshCcw className="w-4 h-4" />
+              </button>
+              <button
+                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                onClick={() => s.videoBase64 && onVideoClick(s.videoBase64)}
+                disabled={!s.videoBase64}
+                aria-label={`View image for scene ${s.index + 1}`}
+              >
+                {s.videoBase64 ? (
+                  <Video className="w-4 h-4" />
+                ) : (
+                  <VideoOff className="w-4 h-4" />
+                )}
+              </button>
+              <button
+                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors"
+                onClick={() => onRegenerateVideoClick(s)}
                 aria-label={`Regenerate image for scene ${s.index + 1}`}
               >
                 <RefreshCcw className="w-4 h-4" />
