@@ -27,9 +27,7 @@ export function useGenerateVideo() {
         const videoBase64 = response.data.videoBase64;
         setRefinedStory((rs) =>
           rs.map((r) =>
-            r.index === selectedStoryBlock.index
-              ? { ...r, videoBase64: videoBase64 }
-              : r
+            r.index === selectedStoryBlock.index ? { ...r, videoBase64 } : r
           )
         );
 

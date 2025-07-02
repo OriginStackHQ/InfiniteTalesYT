@@ -19,7 +19,7 @@ import { useFetchVoices } from "./hooks/useFetchVoices";
 import { useGenerateImage } from "./hooks/useGenerateImage";
 import { useGenerateVideo } from "./hooks/useGenerateVideo";
 import { useAudioPlayer } from "./hooks/useAudioPlayer";
-import type { Scene, StoryBlock, StoryBlockRaw } from "./types";
+import type { Scene, StoryBlock } from "./types";
 
 function AppContent() {
   const {
