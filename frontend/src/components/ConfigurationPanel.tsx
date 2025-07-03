@@ -8,7 +8,6 @@ export function ConfigurationPanel() {
   const [expandedSections, setExpandedSections] = useState<ExpandedSections>({
     video: true,
     captions: true,
-    transitions: true,
   });
 
   const toggleSection = (section: keyof ExpandedSections) => {

@@ -107,5 +107,4 @@ export interface ShortConfig {
 export interface ExpandedSections {
   video: boolean;
   captions: boolean;
-  transitions: boolean;
 }
