@@ -1,4 +1,4 @@
-import { Volume2, Play, Pause } from "lucide-react";
+import { Volume2, Play, Pause, ChevronDown } from "lucide-react";
 import type { VoiceModel } from "../types";
 import { useAppContext } from "../context/AppContext";
 
@@ -9,7 +9,7 @@ interface VoiceSelectorProps {
   loading: boolean;
   onVoiceChange: (voiceId: string) => void;
   onToggleAudio: () => void;
-  onGenerateVoiceCaption: () => void;
+  handleGenerateScenes: () => void;
 }
 
 export function VoiceSelector({
@@ -19,9 +19,10 @@ export function VoiceSelector({
   loading,
   onVoiceChange,
   onToggleAudio,
-  onGenerateVoiceCaption,
+  handleGenerateScenes,
 }: VoiceSelectorProps) {
   const { refinedStory } = useAppContext();
+  const notAllRefinedStoryReady = refinedStory.some((s) => !s.imageBase64);
   return (
     <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
       <div className="flex items-center gap-3 mb-4">
@@ -31,7 +32,7 @@ export function VoiceSelector({
         <h2 className="text-2xl font-semibold text-white">Voice Selection</h2>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-[3fr_1fr] gap-4">
         <div>
           <label className="block text-slate-300 font-medium mb-2">
             Narrator Voice
@@ -40,7 +41,6 @@ export function VoiceSelector({
             <button
               onClick={onToggleAudio}
               className="text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={loading}
               aria-label={
                 isPlaying ? "Pause voice preview" : "Play voice preview"
               }
@@ -54,43 +54,33 @@ export function VoiceSelector({
 
             <div className="relative w-full">
               <select
-                className="w-full appearance-none p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200"
+                className="w-full text-sm appearance-none p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 truncate"
                 value={selectedVoice}
                 disabled={loading}
                 onChange={(e) => onVoiceChange(e.target.value)}
                 aria-label="Select narrator voice"
               >
                 {voices.map((v) => (
-                  <option key={v.VoiceId} value={v.VoiceId}>
+                  <option
+                    key={v.VoiceId}
+                    value={v.VoiceId}
+                    title={`${v.Name} (${v.Gender?.toUpperCase()})`}
+                  >
                     {v.Name} ({v.Gender?.toUpperCase()})
                   </option>
                 ))}
               </select>
 
               <div className="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                <svg
-                  className="w-4 h-4 text-slate-300"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
+                <ChevronDown className="w-5 h-5 text-gray-400" />
               </div>
             </div>
           </div>
         </div>
         <div className="flex items-end">
           <button
-            onClick={onGenerateVoiceCaption}
-            disabled={
-              loading || refinedStory.some((block) => !block.imageBase64)
-            }
+            onClick={handleGenerateScenes}
+            disabled={loading || notAllRefinedStoryReady}
             className="w-full px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
             aria-label="Generate voice and captions"
           >
@@ -99,7 +89,7 @@ export function VoiceSelector({
             ) : (
               <Play className="w-5 h-5" />
             )}
-            Generate Voice & Captions
+            Submit Voice
           </button>
         </div>
       </div>

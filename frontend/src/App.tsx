@@ -20,6 +20,7 @@ import { useGenerateImage } from "./hooks/useGenerateImage";
 import { useGenerateVideo } from "./hooks/useGenerateVideo";
 import { useAudioPlayer } from "./hooks/useAudioPlayer";
 import type { Scene, StoryBlock } from "./types";
+import { VoiceAndCaptionPreview } from "./components/VoiceAndCaptionPreview";
 
 function AppContent() {
   const {
@@ -33,6 +34,7 @@ function AppContent() {
     selectedVoice,
     setSelectedVoice,
     scenes,
+    setScenes,
     fps,
     selectedStoryBlock,
     setSelectedStoryBlock,
@@ -154,13 +156,13 @@ function AppContent() {
   };
 
   const closeVideoModal = () => {
-    setIsVideoModalOpen(false);
     setVideoModal("");
+    setIsVideoModalOpen(false);
   };
 
   const closeImageModal = () => {
-    setIsImageModalOpen(false);
     setImageModal("");
+    setIsImageModalOpen(false);
   };
 
   const openRegenerateImageModal = (s: StoryBlock) => {
@@ -169,8 +171,8 @@ function AppContent() {
   };
 
   const closeRegenerateImageModal = () => {
-    setRegenerateImageModalOpen(false);
     setSelectedStoryBlock(null);
+    setRegenerateImageModalOpen(false);
   };
 
   const openRegenerateVideoModal = (s: StoryBlock) => {
@@ -179,8 +181,8 @@ function AppContent() {
   };
 
   const closeRegenerateVideoModal = () => {
-    setRegenerateVideoModalOpen(false);
     setSelectedStoryBlock(null);
+    setRegenerateVideoModalOpen(false);
   };
 
   const handleRegenerateImage = async (prompt: string) => {
@@ -281,8 +283,43 @@ function AppContent() {
     }
   };
 
+  const convertToEmptyScenes = (refinedStory: StoryBlock[]): Scene[] => {
+    return refinedStory.map((block) => {
+      const scene: Scene = {
+        index: block.index,
+        text: block.text,
+        voiceBase64: null,
+        contentType: "audio/mp3",
+        duration: 0,
+        caption: {
+          text: block.text,
+          segments: [],
+          language: "hi",
+        },
+      };
+      return scene;
+    });
+  };
+
+  const handleSubmitVoice = async () => {
+    const scenes = convertToEmptyScenes(refinedStory);
+    setScenes(scenes);
+  };
+
+  const allScenesReadyForRender =
+    scenes.length === refinedStory.length &&
+    refinedStory.every((s) => s.imageBase64) &&
+    scenes.every((s) => s.voiceBase64 && s.duration > 0 && s.caption);
+
   useEffect(() => {
     if (!scenes.length) return;
+
+    const allScenesReady =
+      scenes.length === refinedStory.length &&
+      refinedStory.every((s) => s.imageBase64) &&
+      scenes.every((s) => s.voiceBase64 && s.duration > 0 && s.caption);
+
+    if (!allScenesReady) return;
 
     const scenesForShort = scenes.map((scene: Scene, index) => ({
       video: "data:video/mp4;base64," + refinedStory[index].videoBase64,
@@ -295,7 +332,7 @@ function AppContent() {
     }));
 
     const totalDurationInSec = scenes.reduce(
-      (acc: number, s: any) => acc + (s.duration || 0),
+      (acc: number, s) => acc + (s.duration || 0),
       0
     );
 
@@ -384,7 +421,7 @@ function AppContent() {
             />
           )}
 
-          {refinedStory.length > 0 && (
+          {refinedStory.length > 0 && voices.length > 0 && (
             <VoiceSelector
               voices={voices}
               selectedVoice={selectedVoice}
@@ -392,21 +429,37 @@ function AppContent() {
               loading={combinedLoading}
               onVoiceChange={handleVoiceChange}
               onToggleAudio={toggleAudio}
-              onGenerateVoiceCaption={generateVoiceCaption}
+              handleGenerateScenes={handleSubmitVoice}
+            />
+          )}
+
+          {scenes.length > 0 && refinedStory.length > 0 && (
+            <VoiceAndCaptionPreview
+              onPlayVoice={(b64) => {
+                const audio = new Audio(`data:audio/mp3;base64,${b64}`);
+                audio.play();
+              }}
+              onRegenerateClick={generateVoiceCaption}
+              onViewCaption={(caption) => {
+                /* open modal with caption.segments */
+              }}
             />
           )}
 
           {/* Configuration & Preview Row */}
-          {shortConfig && refinedStory.length > 0 && scenes.length > 0 && (
-            <div className="grid lg:grid-cols-5 gap-8">
-              <div className="lg:col-span-3 space-y-6">
-                <ConfigurationPanel />
+          {shortConfig &&
+            refinedStory.length > 0 &&
+            scenes.length > 0 &&
+            allScenesReadyForRender && (
+              <div className="grid lg:grid-cols-5 gap-8">
+                <div className="lg:col-span-3 space-y-6">
+                  <ConfigurationPanel />
+                </div>
+                <div className="lg:col-span-2">
+                  <PreviewPanel onExport={exportRender} />
+                </div>
               </div>
-              <div className="lg:col-span-2">
-                <PreviewPanel onExport={exportRender} />
-              </div>
-            </div>
-          )}
+            )}
         </div>
       </div>
     </div>

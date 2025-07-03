@@ -38,7 +38,7 @@ async def root():
 def get_story_service():
     return StoryService()
 
-@app.post("/refine-and-images", response_model=StoryRequest)
+@app.post("/refine-story", response_model=StoryRequest)
 async def refine_story(data: StoryRequest, story_service: StoryService = Depends(get_story_service)):
     try:
         data = await story_service.refine_story(data)
@@ -75,8 +75,8 @@ async def generate_video(request: VideoRequest, media_service: MediaService = De
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/voice-and-caption", response_model=VoiceCaptionResponse)
+    
+@app.post("/generate-voice-and-caption", response_model=VoiceCaptionResponse)
 async def generate_voice_and_caption(request: VoiceCaptionRequest, media_service: MediaService = Depends(get_media_service)):
     try:
         data = await media_service.generate_voice_and_caption(request)

@@ -20,10 +20,12 @@ class Caption(BaseModel):
 
 class VoiceCaption(BaseModel):
     index: int
+    text: str
     voiceBase64: str
     contentType: str
     duration: int
     caption: Caption
     
 class VoiceCaptionResponse(BaseModel):
-    scenes: List[VoiceCaption]
+    narrator: str
+    scene: VoiceCaption

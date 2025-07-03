@@ -7,4 +7,4 @@ class SceneItem(BaseModel):
     
 class VoiceCaptionRequest(BaseModel):
     narrator: str
-    scenes: List[SceneItem]
+    scene: SceneItem

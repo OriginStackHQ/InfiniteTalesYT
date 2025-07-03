@@ -69,7 +69,8 @@ export interface Caption {
 
 export interface Scene {
   index: number;
-  voiceBase64: string;
+  text: string;
+  voiceBase64: string | null;
   contentType: string;
   duration: number;
   caption: Caption;

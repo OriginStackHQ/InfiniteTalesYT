@@ -8,6 +8,14 @@ class StoryService:
         print("StoryService initialized")
 
     def normalize_line(self, line: str) -> str:
+        """
+        Normalize text for TTS engines by:
+        - Replacing em dash (—) and en dash (–) with comma.
+        - Converting smart quotes to straight quotes.
+        """
+        if not line:
+            return ""
+
         line = line.replace("—", ", ").replace("–", ",")
         line = line.replace("‘", "'").replace("’", "'")
         line = line.replace("“", '"').replace("”", '"')

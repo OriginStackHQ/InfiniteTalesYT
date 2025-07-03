@@ -43,8 +43,6 @@ export function StoryJsonEditor({
     const json = JSON.stringify(exportData, null, 2); // Pretty JSON
     const blob = new Blob([json], { type: "application/json" });
 
-    console.log(`Export size: ${(blob.size / (1024 * 1024)).toFixed(2)} MB`);
-
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;

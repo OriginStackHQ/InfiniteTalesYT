@@ -47,6 +47,7 @@ class MediaService:
         print("MediaService initialized")
         self.genai_api_key = os.getenv("GENAI_API_KEY")
         self.genai_client = genai.Client(api_key=self.genai_api_key)
+        self.image_fx_cookie = os.getenv("IMAGE_FX_COOKIE")
         self.file_path = Path(os.path.dirname(os.path.abspath(__file__))) / "data.json"
         self.model_folder_path = Path(os.path.dirname(os.path.abspath(__file__))) / "vosk-model-hi"
         # Regular expression to extract runs of Devanagari letters
@@ -190,7 +191,7 @@ class MediaService:
             with open(self.file_path) as f:
                 config_data = json.load(f)
 
-            cookie = config_data.get("image_fx_cookie")
+            cookie = self.image_fx_cookie
             if not cookie:
                 raise Exception("Google ImageFX cookie is missing")
 
@@ -215,8 +216,7 @@ class MediaService:
             # Update the existing config data instead of replacing it
             config_data.update({
                 "image_fx_key": auth_data["access_token"],
-                "image_fx_key_expiry": auth_data["expires"],
-                "image_fx_cookie": cookie
+                "image_fx_key_expiry": auth_data["expires"]
             })
 
             with open(self.file_path, 'w') as f:
@@ -375,23 +375,6 @@ class MediaService:
         gen_videos_base64: List[str] = await self.generate_video_from_image_genai(request.text, image_input)
         return VideoResponse(text=request.text, imageBase64=request.imageBase64, videoBase64=gen_videos_base64[0])
 
-    def normalize_line(self, line: str) -> str:
-        """
-        Replace or remove symbols that may confuse TTS engines (e.g., ElevenLabs).
-        - Replace Hindi/em dash (—) and en dash (–) with a comma.
-        - Replace smart quotes with straight quotes.
-        """
-        if not line:
-            return ""
-            
-        # Replace em dash and en dash with comma
-        line = line.replace("—", ", ").replace("–", ", ")
-        # Replace smart single quotes with straight single quote
-        line = line.replace("'", "'").replace("'", "'")
-        # Replace smart double quotes with straight double quote
-        line = line.replace(""", '"').replace(""", '"')
-        return line
-    
     def split_into_sentences(self, line: str) -> List[str]:
         """
         Splits a single line into separate sentences based on Hindi danda (।), 
@@ -707,13 +690,12 @@ class MediaService:
         """
         Generate voice and captions for the provided scenes.
         """
-        normalized_text = self.normalize_line(request.text)
-        json_data_str = self.process_text(normalized_text, 4)
+        json_data_str = self.process_text(request.text, 4)
         json_data = json.loads(json_data_str)
 
         
         mp3_data = self.generate_tts_audio_from_json(
-            normalized_text, voice_id, api_key
+            request.text, voice_id, api_key
         )
         
         wav_data = self.convert_mp3_to_wav(mp3_data)
@@ -738,7 +720,7 @@ class MediaService:
             ))
         
         caption = Caption(
-            text=normalized_text,
+            text=request.text,
             segments=segments,
             language="hi"
         )
@@ -748,32 +730,32 @@ class MediaService:
         """
         Generate voice and captions for the provided text.
         """
-        voiceCaptions: List[VoiceCaption] = []
 
         voice_id = request.narrator
 
-        for scene in request.scenes:
-            # Generate voice and captions
-            mp3_data, caption = await self.get_voice_and_caption(scene, voice_id, self.eleven_labs_api_key)
+        # Generate voice and captions
+        mp3_data, caption = await self.get_voice_and_caption(request.scene, voice_id, self.eleven_labs_api_key)
 
-            if caption.segments:
-                duration = int(math.ceil(caption.segments[-1].end / 1000))
-            else:
-                duration = 0
+        if caption.segments:
+            duration = int(math.ceil(caption.segments[-1].end / 1000))
+        else:
+            duration = 0
 
-            # Encode voice to base64.
-            voice_base64: str = base64.b64encode(mp3_data.getvalue()).decode("utf-8")
+        # Encode voice to base64.
+        voice_base64: str = base64.b64encode(mp3_data.getvalue()).decode("utf-8")
 
-            voiceCaptions.append(VoiceCaption(
-                index=scene.index,
-                voiceBase64=voice_base64,
-                contentType="audio/mp3",
-                duration=duration,
-                caption=caption
-            ))
+        voiceCaption = VoiceCaption(
+            index=request.scene.index,
+            text=request.scene.text,
+            voiceBase64=voice_base64,
+            contentType="audio/mp3",
+            duration=duration,
+            caption=caption
+        )
 
         return VoiceCaptionResponse(
-            scenes=voiceCaptions
+            narrator=voice_id,
+            scene=voiceCaption
         )
 
     async def get_voices(self):

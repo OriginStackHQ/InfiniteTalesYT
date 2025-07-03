@@ -54,7 +54,7 @@ export function RefinedScenesPreview({
                 )}
               </button>
               <button
-                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors"
+                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => onRegenerateImageClick(s)}
                 aria-label={`Regenerate image for scene ${s.index + 1}`}
               >
@@ -73,13 +73,13 @@ export function RefinedScenesPreview({
                 )}
               </button>
               <button
-                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors"
+                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => onRegenerateVideoClick(s)}
                 aria-label={`Regenerate image for scene ${s.index + 1}`}
               >
                 <RefreshCcw className="w-4 h-4" />
               </button>
-              <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium">
+              <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                 Scene {s.index + 1}
               </span>
               <p className="text-slate-300 text-sm leading-relaxed flex-1">

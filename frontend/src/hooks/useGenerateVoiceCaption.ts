@@ -3,21 +3,13 @@ import { useAppContext } from "../context/AppContext";
 import type { Scene } from "../types";
 
 export function useGenerateVoiceCaption() {
-  const {
-    refinedStory,
-    selectedVoice,
-    setScenes,
-    setShortConfig,
-    defaultShortConfig,
-  } = useAppContext();
+  const { refinedStory, selectedVoice, scenes, setScenes } = useAppContext();
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateVoiceCaption = async () => {
+  const generateVoiceCaption = async (scene: Scene) => {
     setError(null);
-    setScenes([]);
-    setShortConfig(defaultShortConfig);
 
     if (!refinedStory || refinedStory.length === 0) {
       setError("Please refine the story first.");
@@ -28,26 +20,41 @@ export function useGenerateVoiceCaption() {
       return;
     }
 
+    if (!scene.text.trim()) {
+      setError("Scene text is empty.");
+      return;
+    }
+
     setLoading(true);
     try {
-      // Prepare payload: narrator and scenes without imageBase64
       const payload = {
         narrator: selectedVoice,
-        scenes: refinedStory.map(({ imageBase64, ...rest }) => rest),
+        scene: scene,
       };
 
-      const res = await fetch("http://localhost:8000/voice-and-caption", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        "http://localhost:8000/generate-voice-and-caption",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
       if (!res.ok) {
         const errorJson = await res.json();
         throw new Error(errorJson.message);
       }
       const response = await res.json();
-      if (response.success && Array.isArray(response.data.scenes)) {
-        setScenes(response.data.scenes as Scene[]);
+      if (response.success && response.data) {
+        const updatedScene = response.data.scene as Scene;
+        const updatedScenes = scenes.map((s) => {
+          if (s.index === updatedScene.index) {
+            return updatedScene;
+          }
+          return s;
+        });
+
+        setScenes(updatedScenes);
       } else {
         throw new Error("Invalid voice-caption response structure");
       }
@@ -59,5 +66,10 @@ export function useGenerateVoiceCaption() {
     }
   };
 
-  return { generateVoiceCaption, loading, error, setError };
+  return {
+    generateVoiceCaption,
+    loading,
+    error,
+    setError,
+  };
 }
