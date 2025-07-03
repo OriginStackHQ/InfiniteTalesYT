@@ -46,9 +46,9 @@ export function VoiceSelector({
               }
             >
               {isPlaying ? (
-                <Pause className="w-10 h-10 bg-blue-600 p-2 rounded-full" />
+                <Pause className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-full" />
               ) : (
-                <Play className="w-10 h-10 bg-blue-600 p-2 rounded-full" />
+                <Play className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-full" />
               )}
             </button>
 

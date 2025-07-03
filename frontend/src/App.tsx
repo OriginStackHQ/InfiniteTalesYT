@@ -434,16 +434,7 @@ function AppContent() {
           )}
 
           {scenes.length > 0 && refinedStory.length > 0 && (
-            <VoiceAndCaptionPreview
-              onPlayVoice={(b64) => {
-                const audio = new Audio(`data:audio/mp3;base64,${b64}`);
-                audio.play();
-              }}
-              onRegenerateClick={generateVoiceCaption}
-              onViewCaption={(caption) => {
-                /* open modal with caption.segments */
-              }}
-            />
+            <VoiceAndCaptionPreview onRegenerateClick={generateVoiceCaption} />
           )}
 
           {/* Configuration & Preview Row */}

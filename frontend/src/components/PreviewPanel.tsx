@@ -13,7 +13,7 @@ export function PreviewPanel({ onExport }: PreviewPanelProps) {
   return (
     <div className="sticky top-6 backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
       <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg">
+        <div className="p-2 bg-gradient-to-r from-rose-500 to-red-600 rounded-lg">
           <Eye className="w-5 h-5 text-white" />
         </div>
         <h2 className="text-2xl font-semibold text-white">Live Preview</h2>
@@ -47,7 +47,7 @@ export function PreviewPanel({ onExport }: PreviewPanelProps) {
         <div className="mt-6 flex justify-center">
           <button
             onClick={onExport}
-            className="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+            className="px-6 py-3 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
             aria-label="Export video"
           >
             <Download className="w-5 h-5" />
