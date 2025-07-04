@@ -45,7 +45,7 @@ export function RefinedScenesPreview({
           >
             <div className="flex items-start gap-3">
               <button
-                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => s.imageBase64 && onImageClick(s.imageBase64)}
                 disabled={!s.imageBase64}
                 aria-label={`View image for scene ${s.index + 1}`}
@@ -57,7 +57,7 @@ export function RefinedScenesPreview({
                 )}
               </button>
               <button
-                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => onRegenerateImageClick(s)}
                 disabled={loading}
                 aria-label={`Regenerate image for scene ${s.index + 1}`}
@@ -69,7 +69,7 @@ export function RefinedScenesPreview({
                 )}
               </button>
               <button
-                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => s.videoBase64 && onVideoClick(s.videoBase64)}
                 disabled={!s.videoBase64}
                 aria-label={`View image for scene ${s.index + 1}`}
@@ -81,7 +81,7 @@ export function RefinedScenesPreview({
                 )}
               </button>
               <button
-                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => onRegenerateVideoClick(s)}
                 disabled={loading}
                 aria-label={`Regenerate video for scene ${s.index + 1}`}
@@ -92,7 +92,7 @@ export function RefinedScenesPreview({
                   <RotateCw className="w-4 h-4" />
                 )}
               </button>
-              <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
+              <span className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/30 rounded-lg text-yellow-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                 Scene {s.index + 1}
               </span>
               <p className="text-slate-300 text-sm leading-relaxed flex-1">

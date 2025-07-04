@@ -46,7 +46,7 @@ const defaultShortConfig: ShortConfig = {
     textColor: "#ff0000",
     bgColor: "#000000",
     font: "Poppins",
-    fontSize: 25,
+    fontSize: 38,
   },
 };
 

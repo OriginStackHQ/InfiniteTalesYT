@@ -62,7 +62,7 @@ export function ConfigurationPanel() {
                       videoSource: e.target.value as "Image" | "Video",
                     })
                   }
-                  className="w-full p-3 bg-slate-800/50 border border-slate-600/50 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                  className="w-full text-sm appearance-none p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 truncate disabled:bg-slate-800/50 disabled:border-slate-600/50 disabled:text-slate-400"
                   aria-label="Select video source"
                 >
                   <option value="Image">Image</option>
@@ -102,7 +102,7 @@ export function ConfigurationPanel() {
                 type="text"
                 value={shortConfig.bgSong}
                 onChange={(e) => updateShortConfig({ bgSong: e.target.value })}
-                className="w-full p-3 bg-slate-800/50 border border-slate-600/50 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+                className="w-full text-sm appearance-none p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 truncate disabled:bg-slate-800/50 disabled:border-slate-600/50 disabled:text-slate-400"
                 placeholder="Enter background music URL..."
                 aria-label="Background song URL"
               />
@@ -170,7 +170,7 @@ export function ConfigurationPanel() {
                       },
                     })
                   }
-                  className="w-full p-3 bg-slate-800/50 border border-slate-600/50 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full text-sm appearance-none p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 truncate disabled:bg-slate-800/50 disabled:border-slate-600/50 disabled:text-slate-400"
                   aria-label="Caption type"
                 >
                   <option value="Line">Line</option>
@@ -194,7 +194,7 @@ export function ConfigurationPanel() {
                       },
                     })
                   }
-                  className="w-full p-3 bg-slate-800/50 border border-slate-600/50 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                  className="w-full text-sm appearance-none p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 truncate disabled:bg-slate-800/50 disabled:border-slate-600/50 disabled:text-slate-400"
                   aria-label="Font family"
                 >
                   <option value="Kalam">Kalam</option>
@@ -210,20 +210,29 @@ export function ConfigurationPanel() {
                   Text Color
                 </label>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={shortConfig.captionStyle.textColor}
-                    onChange={(e) =>
-                      updateShortConfig({
-                        captionStyle: {
-                          ...shortConfig.captionStyle,
-                          textColor: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg cursor-pointer"
-                    aria-label="Text color"
-                  />
+                  <label className="relative w-6 h-6 rounded-full overflow-hidden border border-slate-600 cursor-pointer">
+                    <span
+                      className="block w-full h-full rounded-full"
+                      style={{
+                        backgroundColor: shortConfig.captionStyle.textColor,
+                      }}
+                    ></span>
+                    <input
+                      type="color"
+                      value={shortConfig.captionStyle.textColor}
+                      onChange={(e) =>
+                        updateShortConfig({
+                          captionStyle: {
+                            ...shortConfig.captionStyle,
+                            textColor: e.target.value,
+                          },
+                        })
+                      }
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      aria-label="Text color"
+                    />
+                  </label>
+
                   <span className="text-slate-300 text-sm font-mono">
                     {shortConfig.captionStyle.textColor}
                   </span>
@@ -234,20 +243,29 @@ export function ConfigurationPanel() {
                   Background Color
                 </label>
                 <div className="flex items-center gap-3">
-                  <input
-                    type="color"
-                    value={shortConfig.captionStyle.bgColor}
-                    onChange={(e) =>
-                      updateShortConfig({
-                        captionStyle: {
-                          ...shortConfig.captionStyle,
-                          bgColor: e.target.value,
-                        },
-                      })
-                    }
-                    className="w-12 h-12 bg-slate-800 border border-slate-600 rounded-lg cursor-pointer"
-                    aria-label="Background color"
-                  />
+                  <label className="relative w-6 h-6 rounded-full overflow-hidden border border-slate-600 cursor-pointer">
+                    <span
+                      className="block w-full h-full rounded-full"
+                      style={{
+                        backgroundColor: shortConfig.captionStyle.bgColor,
+                      }}
+                    ></span>
+                    <input
+                      type="color"
+                      value={shortConfig.captionStyle.bgColor}
+                      onChange={(e) =>
+                        updateShortConfig({
+                          captionStyle: {
+                            ...shortConfig.captionStyle,
+                            bgColor: e.target.value,
+                          },
+                        })
+                      }
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      aria-label="Background color"
+                    />
+                  </label>
+
                   <span className="text-slate-300 text-sm font-mono">
                     {shortConfig.captionStyle.bgColor}
                   </span>

@@ -1,4 +1,11 @@
-import { Volume2, VolumeX, RefreshCcw, Captions, RotateCw } from "lucide-react";
+import {
+  VolumeX,
+  RefreshCcw,
+  Captions,
+  RotateCw,
+  Pause,
+  Play,
+} from "lucide-react";
 import type { Scene } from "../types";
 import { useAppContext } from "../context/AppContext";
 import { useEffect, useState, useRef } from "react";
@@ -41,15 +48,28 @@ export function VoiceAndCaptionPreview({
   }, [currentSceneIndex]);
 
   const handlePlay = (scene: Scene) => {
+    // If this scene is already selected and an audio element exists
     if (currentSceneIndex === scene.index && audioRef.current) {
-      audioRef.current.currentTime = 0;
+      if (audioRef.current.paused) {
+        // Resume
+        audioRef.current.play();
+      } else {
+        // Pause
+        audioRef.current.pause();
+      }
       return;
     }
+
+    // Otherwise, stop any existing audio
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
     }
+
+    // Guard: no voice available
     if (!scene.voiceBase64) return;
+
+    // Create and play new audio
     const src = `data:${scene.contentType};base64,${scene.voiceBase64}`;
     const newAudio = new Audio(src);
     audioRef.current = newAudio;
@@ -81,12 +101,18 @@ export function VoiceAndCaptionPreview({
             <div className="flex items-start gap-3">
               {/* Play */}
               <button
-                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => handlePlay(scene)}
                 disabled={!scene.voiceBase64}
               >
                 {scene.voiceBase64 ? (
-                  <Volume2 className="w-4 h-4" />
+                  currentSceneIndex === scene.index &&
+                  audioRef.current &&
+                  !audioRef.current.paused ? (
+                    <Pause className="w-4 h-4" />
+                  ) : (
+                    <Play className="w-4 h-4" />
+                  )
                 ) : (
                   <VolumeX className="w-4 h-4" />
                 )}
@@ -94,7 +120,7 @@ export function VoiceAndCaptionPreview({
 
               {/* Regenerate & View buttons */}
               <button
-                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+                className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => onRegenerateClick(scene)}
                 disabled={loading}
                 aria-label={`Regenerate voice and caption for scene ${
@@ -108,7 +134,7 @@ export function VoiceAndCaptionPreview({
                 )}
               </button>
 
-              <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium">
+              <span className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-300 text-xs font-medium">
                 Scene {scene.index + 1}
               </span>
 
@@ -127,7 +153,7 @@ export function VoiceAndCaptionPreview({
                     return (
                       <span
                         key={seg.index}
-                        className={active ? "text-yellow-300" : "text-white/80"}
+                        className={active ? "text-red-500" : "text-white/80"}
                       >
                         {seg.text + " "}
                       </span>
