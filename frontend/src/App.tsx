@@ -413,6 +413,7 @@ function AppContent() {
 
           {refinedStory.length > 0 && (
             <RefinedScenesPreview
+              loading={combinedLoading}
               refinedStory={refinedStory}
               onImageClick={openImageModal}
               onRegenerateImageClick={openRegenerateImageModal}
@@ -434,7 +435,10 @@ function AppContent() {
           )}
 
           {scenes.length > 0 && refinedStory.length > 0 && (
-            <VoiceAndCaptionPreview onRegenerateClick={generateVoiceCaption} />
+            <VoiceAndCaptionPreview
+              loading={combinedLoading}
+              onRegenerateClick={generateVoiceCaption}
+            />
           )}
 
           {/* Configuration & Preview Row */}

@@ -1,6 +1,7 @@
 import { Volume2, Play, Pause, ChevronDown } from "lucide-react";
 import type { VoiceModel } from "../types";
 import { useAppContext } from "../context/AppContext";
+import { useMemo } from "react";
 
 interface VoiceSelectorProps {
   voices: VoiceModel[];
@@ -22,7 +23,10 @@ export function VoiceSelector({
   handleGenerateScenes,
 }: VoiceSelectorProps) {
   const { refinedStory } = useAppContext();
-  const notAllRefinedStoryReady = refinedStory.some((s) => !s.imageBase64);
+  const notAllRefinedStoryReady = useMemo(
+    () => refinedStory.some((s) => !s.imageBase64),
+    [refinedStory]
+  );
   return (
     <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
       <div className="flex items-center gap-3 mb-4">
@@ -40,6 +44,7 @@ export function VoiceSelector({
           <div className="flex items-center gap-2">
             <button
               onClick={onToggleAudio}
+              disabled={loading}
               className="text-white cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label={
                 isPlaying ? "Pause voice preview" : "Play voice preview"
@@ -54,9 +59,9 @@ export function VoiceSelector({
 
             <div className="relative w-full">
               <select
-                className="w-full text-sm appearance-none p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 truncate"
+                className="w-full text-sm appearance-none p-3 bg-slate-900/50 border border-slate-600/50 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-200 truncate disabled:bg-slate-800/50 disabled:border-slate-600/50 disabled:text-slate-400"
                 value={selectedVoice}
-                disabled={loading}
+                disabled={loading || isPlaying}
                 onChange={(e) => onVoiceChange(e.target.value)}
                 aria-label="Select narrator voice"
               >
@@ -77,7 +82,7 @@ export function VoiceSelector({
             </div>
           </div>
         </div>
-        <div className="flex items-end">
+        <div className="flex items-end text-sm">
           <button
             onClick={handleGenerateScenes}
             disabled={loading || notAllRefinedStoryReady}
@@ -85,9 +90,9 @@ export function VoiceSelector({
             aria-label="Generate voice and captions"
           >
             {loading ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              <Play className="w-5 h-5" />
+              <Play className="w-4 h-4" />
             )}
             Submit Voice
           </button>

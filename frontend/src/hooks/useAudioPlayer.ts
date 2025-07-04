@@ -1,21 +1,25 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 
 export function useAudioPlayer() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [isPlaying, setIsPlaying] = useState(false);
 
-  const setAudio = (url: string) => {
+  /** Create or replace the audio element */
+  const setAudio = useCallback((url: string) => {
+    // Clean up any existing element
     if (audioRef.current) {
       audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      audioRef.current.src = "";
+      audioRef.current = null;
     }
 
     const audio = new Audio(url);
     audio.onended = () => setIsPlaying(false);
     audioRef.current = audio;
-  };
+  }, []);
 
-  const toggleAudio = () => {
+  /** Toggle play / pause */
+  const toggleAudio = useCallback(() => {
     if (!audioRef.current) return;
 
     if (audioRef.current.paused) {
@@ -25,11 +29,17 @@ export function useAudioPlayer() {
       audioRef.current.pause();
       setIsPlaying(false);
     }
-  };
+  }, []);
 
-  return {
-    isPlaying,
-    setAudio,
-    toggleAudio,
-  };
+  /** Auto‑pause on component unmount */
+  useEffect(() => {
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = "";
+      }
+    };
+  }, []);
+
+  return { isPlaying, setAudio, toggleAudio };
 }

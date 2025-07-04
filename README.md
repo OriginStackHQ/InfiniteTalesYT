@@ -1,33 +1,36 @@
-# InfiniteTalesYT - Video Studio Pro
+# 🎬 InfiniteZoneYT – Video Studio
 
-# 📽️ Video Studio Pro
+### [Visit YouTube InfiniteZoneYT](https://youtube.com/@InfiniteZoneYT)
 
-**Video Studio Pro** is a storytelling tool that transforms text-based stories into engaging, short-form animated videos — perfect for YouTube Shorts, Instagram Reels, and other vertical platforms.
+**InfiniteZoneYT** is an AI-powered engine that turns scripts, memes, and emotions into scroll-stopping **Hindi Videos** — perfect for YouTube Shorts & Videos.
 
-### ✨ What It Does
+## ✨ What It Does
 
-- Allows users to write or paste a story in Hindi.
-- Automatically refines the story into visual scenes.
-- Generates 3D-style images and animations for each scene.
-- Adds realistic AI voiceovers in natural Hindi.
-- Creates synced captions that appear word-by-word or segment-by-segment.
-- Previews the video in a phone-like format before rendering.
-
-### 💡 Use Cases
-
-- Short moral stories for kids
-- Motivational reels
-- Regional storytelling channels
-- Audiovisual poetry or quotes
-- Bite-sized educational content
-
-### 🔥 Key Features
-
-- Scene-based storytelling with auto-generated visuals
-- Customizable voiceovers and caption styles
-- Real-time preview of your video
-- Export-ready short format
+- Converts ideas into visual scenes
+- Auto-generates cartoonish 3D-style visuals
+- Adds emotional Hindi voiceovers
+- Syncs captions word-by-word
+- Renders mobile-first, ready-to-share videos
 
 ---
 
-> Whether you're a creator, educator, or storyteller — **Video Studio Pro** helps you bring your words to life as beautiful, short-format videos.
+## 💡 Best For
+
+- Motivational & emotional stories
+- Funny meme remixes
+- Trending topic shorts and videos
+- Kids' tales & cultural nuggets
+
+---
+
+## 🔥 Features
+
+- Scene-wise AI image & video prompts
+- Realistic Hindi voice synthesis
+- Captions with mood pacing
+- Real-time preview of your video
+- Preview before export
+
+---
+
+Whether you're a creator, educator, or storyteller, InfiniteZoneYT is the perfect tool to bring your ideas to life. Join us on our mission to make storytelling accessible to everyone.

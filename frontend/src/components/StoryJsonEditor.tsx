@@ -37,16 +37,16 @@ export function StoryJsonEditor({
   const handleDownload = () => {
     const exportData: FullParsedStory = {
       topic: parsedStory.topic,
-      storyBlocks: refinedStory, // already of type StoryBlock[]
+      storyBlocks: refinedStory,
     };
 
-    const json = JSON.stringify(exportData, null, 2); // Pretty JSON
+    const json = JSON.stringify(exportData, null, 2);
     const blob = new Blob([json], { type: "application/json" });
 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "full_story_with_base64.json";
+    a.download = parsedStory.topic + " Story.json";
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -72,7 +72,7 @@ export function StoryJsonEditor({
             })
           ),
         };
-
+        resetAll();
         setParsedStory(parsedStoryRaw);
         setRefinedStory(parsed.storyBlocks);
         setStoryJson(JSON.stringify(parsedStoryRaw, null, 2));
@@ -101,13 +101,14 @@ export function StoryJsonEditor({
         <h2 className="text-2xl font-semibold text-white">Story JSON Editor</h2>
       </div>
 
-      <div className="bg-slate-900/40 border border-slate-600/50 rounded-xl p-4 max-h-[400px] overflow-auto">
+      <div className="bg-slate-900/40 border border-slate-600/50 rounded-xl p-2 max-h-[400px] overflow-auto">
         {parsedStory ? (
           <JsonEditor
             data={parsedStory}
             setData={handleSetData}
             rootName=""
             rootFontSize="14px"
+            minWidth={"100%"}
             maxWidth={"100%"}
           />
         ) : (
@@ -117,25 +118,26 @@ export function StoryJsonEditor({
         )}
       </div>
 
-      <div className="flex justify-between items-center mt-4">
+      <div className="grid grid-cols-2 gap-3 mt-4 text-sm sm:flex sm:flex-row sm:items-center sm:justify-between">
         <button
           onClick={onRefine}
           disabled={loading}
-          className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+          className="px-3 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-xl hover:from-blue-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
           aria-label="Refine story"
         >
           {loading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
-            <Zap className="w-5 h-5" />
+            <Zap className="w-4 h-4" />
           )}
           Refine Story
         </button>
+
         <label
           htmlFor="upload-json"
-          className="px-6 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl hover:from-yellow-700 hover:to-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl cursor-pointer"
+          className="px-3 py-3 bg-gradient-to-r from-yellow-600 to-yellow-700 text-white rounded-xl hover:from-yellow-700 hover:to-yellow-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl cursor-pointer"
         >
-          <Upload className="w-5 h-5" />
+          <Upload className="w-4 h-4" />
           Upload JSON
           <input
             id="upload-json"
@@ -149,10 +151,10 @@ export function StoryJsonEditor({
         <button
           onClick={handleDownload}
           disabled={!parsedStory}
-          className="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+          className="px-3 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
           aria-label="Download JSON"
         >
-          <Upload className="w-5 h-5 rotate-180" />
+          <Upload className="w-4 h-4 rotate-180" />
           Download JSON
         </button>
 
@@ -163,13 +165,13 @@ export function StoryJsonEditor({
             setLoading(false);
           }}
           disabled={loading}
-          className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
-          aria-label="Refine story"
+          className="px-3 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+          aria-label="Reset all"
         >
           {loading ? (
-            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
-            <Trash2 className="w-5 h-5" />
+            <Trash2 className="w-4 h-4" />
           )}
           Reset All
         </button>

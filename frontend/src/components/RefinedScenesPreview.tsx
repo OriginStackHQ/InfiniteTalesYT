@@ -3,12 +3,14 @@ import {
   ImageIcon,
   ImageOff,
   RefreshCcw,
+  RotateCw,
   Video,
   VideoOff,
 } from "lucide-react";
 import type { StoryBlock } from "../types";
 
 interface RefinedScenesPreviewProps {
+  loading: boolean;
   refinedStory: StoryBlock[];
   onImageClick: (imageBase64: string) => void;
   onRegenerateImageClick: (storyBlock: StoryBlock) => void;
@@ -17,6 +19,7 @@ interface RefinedScenesPreviewProps {
 }
 
 export function RefinedScenesPreview({
+  loading,
   refinedStory,
   onImageClick,
   onRegenerateImageClick,
@@ -56,9 +59,14 @@ export function RefinedScenesPreview({
               <button
                 className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => onRegenerateImageClick(s)}
+                disabled={loading}
                 aria-label={`Regenerate image for scene ${s.index + 1}`}
               >
-                <RefreshCcw className="w-4 h-4" />
+                {s.imageBase64 ? (
+                  <RefreshCcw className="w-4 h-4" />
+                ) : (
+                  <RotateCw className="w-4 h-4" />
+                )}
               </button>
               <button
                 className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
@@ -75,9 +83,14 @@ export function RefinedScenesPreview({
               <button
                 className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => onRegenerateVideoClick(s)}
-                aria-label={`Regenerate image for scene ${s.index + 1}`}
+                disabled={loading}
+                aria-label={`Regenerate video for scene ${s.index + 1}`}
               >
-                <RefreshCcw className="w-4 h-4" />
+                {s.videoBase64 ? (
+                  <RefreshCcw className="w-4 h-4" />
+                ) : (
+                  <RotateCw className="w-4 h-4" />
+                )}
               </button>
               <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed">
                 Scene {s.index + 1}

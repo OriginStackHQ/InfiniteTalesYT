@@ -1,13 +1,15 @@
-import { Volume2, VolumeX, RefreshCcw, Captions } from "lucide-react";
+import { Volume2, VolumeX, RefreshCcw, Captions, RotateCw } from "lucide-react";
 import type { Scene } from "../types";
 import { useAppContext } from "../context/AppContext";
 import { useEffect, useState, useRef } from "react";
 
 interface VoiceAndCaptionPreview {
+  loading: boolean;
   onRegenerateClick: (scene: Scene) => void;
 }
 
 export function VoiceAndCaptionPreview({
+  loading,
   onRegenerateClick,
 }: VoiceAndCaptionPreview) {
   const { scenes } = useAppContext();
@@ -90,12 +92,20 @@ export function VoiceAndCaptionPreview({
                 )}
               </button>
 
-              {/* Regenerate & View buttons (unchanged) */}
+              {/* Regenerate & View buttons */}
               <button
-                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30"
+                className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => onRegenerateClick(scene)}
+                disabled={loading}
+                aria-label={`Regenerate voice and caption for scene ${
+                  scene.index + 1
+                }`}
               >
-                <RefreshCcw className="w-4 h-4" />
+                {scene.voiceBase64 ? (
+                  <RefreshCcw className="w-4 h-4" />
+                ) : (
+                  <RotateCw className="w-4 h-4" />
+                )}
               </button>
 
               <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium">
