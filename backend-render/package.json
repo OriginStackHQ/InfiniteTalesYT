@@ -1,5 +1,5 @@
 {
-  "name": "infinite-tales-yt-video-render-service",
+  "name": "video-render-service",
   "version": "1.0.0",
   "description": "Remotion video rendering microservice",
   "main": "dist/index.js",
