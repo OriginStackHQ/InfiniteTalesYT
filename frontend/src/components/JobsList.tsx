@@ -11,11 +11,11 @@ export function JobsList({ jobs, onCancelJob, onDeleteAll }: JobsListProps) {
   return (
     <div className="backdrop-blur-xl bg-slate-800/40 border border-slate-700/50 rounded-2xl p-6 shadow-2xl">
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg">
+        <div className="p-2 bg-gradient-to-r from-gray-500 to-stone-500 rounded-lg">
           <Eye className="w-5 h-5 text-white" />
         </div>
         <h2 className="text-2xl font-semibold text-white">Render Jobs</h2>
-        <span className="px-3 py-1 bg-green-500/20 border border-green-500/30 rounded-full text-green-300 text-sm">
+        <span className="px-3 py-1 bg-gray-200/20 border border-gray-200/30 rounded-full text-gray-200 text-sm">
           {jobs.length} jobs
         </span>
       </div>
@@ -35,7 +35,7 @@ export function JobsList({ jobs, onCancelJob, onDeleteAll }: JobsListProps) {
             className="p-4 bg-slate-900/30 border border-slate-600/30 rounded-xl"
           >
             <div className="flex items-start gap-3">
-              <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-300 text-xs font-medium">
+              <span className="px-2 py-1 bg-gray-300/20 border border-gray-500/30 rounded-lg text-gray-100 text-xs font-medium">
                 Job {i + 1}
               </span>
               <div className="flex justify-between flex-1">
