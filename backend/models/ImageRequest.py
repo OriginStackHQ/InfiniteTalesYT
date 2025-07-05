@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List
     
 class ImageRequest(BaseModel):
+    index: int
     text: str

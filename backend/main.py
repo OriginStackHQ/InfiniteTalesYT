@@ -13,6 +13,7 @@ from utils.response import response
 from fastapi.exceptions import RequestValidationError
 from utils.exceptions import http_exception_handler, validation_exception_handler
 import uvicorn
+from typing import List
 
 app = FastAPI()
 
@@ -63,6 +64,18 @@ async def generate_image(request: ImageRequest, media_service: MediaService = De
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/generate-all-images", response_model=List[ImageResponse]) 
+async def generate_all_images(request: List[ImageRequest], media_service: MediaService = Depends(get_media_service)):
+    try:
+        data = await media_service.generate_all_images(request)
+        return response(message="All images generated successfully", data=data)
+    
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     
 @app.post("/generate-video", response_model=VideoResponse)
 async def generate_video(request: VideoRequest, media_service: MediaService = Depends(get_media_service)):
@@ -76,11 +89,35 @@ async def generate_video(request: VideoRequest, media_service: MediaService = De
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     
+@app.post("/generate-all-videos", response_model=List[VideoResponse])
+async def generate_all_videos(request: List[VideoRequest], media_service: MediaService = Depends(get_media_service)):
+    try:
+        data = await media_service.generate_all_videos(request)
+        return response(message="All videos generated successfully", data=data)
+    
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
 @app.post("/generate-voice-and-caption", response_model=VoiceCaptionResponse)
 async def generate_voice_and_caption(request: VoiceCaptionRequest, media_service: MediaService = Depends(get_media_service)):
     try:
         data = await media_service.generate_voice_and_caption(request)
         return response(message="Voice and caption generated successfully", data=data)
+    
+    except HTTPException as e:
+        raise e
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    
+@app.post("/generate-all-voices-and-captions", response_model=List[VoiceCaptionResponse])
+async def generate_all_voices_and_captions(request: List[VoiceCaptionRequest], media_service: MediaService = Depends(get_media_service)):
+    try:
+        data = await media_service.generate_all_voices_and_captions(request)
+        return response(message="All voices and captions generated successfully", data=data)
     
     except HTTPException as e:
         raise e

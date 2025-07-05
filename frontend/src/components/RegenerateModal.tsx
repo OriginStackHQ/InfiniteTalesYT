@@ -22,7 +22,7 @@ export function RegenerateModal({
         <button
           className="absolute top-4 right-4 text-2xl text-gray-400 hover:text-white"
           onClick={onClose}
-          aria-label="Close regenerate modal"
+          aria-label="Close generate modal"
         >
           <Plus className="h-6 w-6 rotate-45" />
         </button>
@@ -35,21 +35,21 @@ export function RegenerateModal({
           placeholder="Type something..."
           className="w-full p-3 mb-4 border border-yellow-300 rounded-lg text-white bg-slate-900/50 focus:outline-none focus:ring-2 focus:ring-yellow-500"
           rows={5}
-          aria-label="Image generation prompt"
+          aria-label="Generation prompt"
         />
 
         <button
           onClick={() => onRegenerate(promptText)}
-          disabled={!promptText || loading}
+          disabled={!promptText}
           className="w-full px-6 py-3 bg-gradient-to-r from-yellow-600 to-orange-600 text-white rounded-xl hover:from-yellow-700 hover:to-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl"
-          aria-label="Regenerate image"
+          aria-label="Generate"
         >
           {loading ? (
             <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
           ) : (
             <RefreshCcw className="w-5 h-5" />
           )}
-          Regenerate
+          Generate
         </button>
       </div>
     </div>

@@ -69,7 +69,7 @@ export function useFetchJobs() {
 
   useEffect(() => {
     fetchJobs();
-    const interval = setInterval(fetchJobs, 60_000);
+    const interval = setInterval(fetchJobs, 180_000);
     return () => clearInterval(interval);
   }, []);
 

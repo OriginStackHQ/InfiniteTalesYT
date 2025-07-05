@@ -47,7 +47,7 @@ export function PreviewPanel({ onExport }: PreviewPanelProps) {
         <div className="mt-6 flex justify-center">
           <button
             onClick={onExport}
-            className="px-6 py-3 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl hover:from-green-700 hover:to-emerald-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+            className="px-6 py-3 bg-gradient-to-r from-rose-500 to-red-600 text-white rounded-xl hover:from-rose-600 hover:to-red-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
             aria-label="Export video"
           >
             <Download className="w-5 h-5" />

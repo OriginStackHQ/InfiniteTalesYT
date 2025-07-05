@@ -13,11 +13,13 @@ import { useEffect, useState, useRef } from "react";
 interface VoiceAndCaptionPreview {
   loading: boolean;
   onRegenerateClick: (scene: Scene) => void;
+  handleGenerateAllVoicesAndCaptions: () => void;
 }
 
 export function VoiceAndCaptionPreview({
   loading,
   onRegenerateClick,
+  handleGenerateAllVoicesAndCaptions,
 }: VoiceAndCaptionPreview) {
   const { scenes } = useAppContext();
 
@@ -90,6 +92,14 @@ export function VoiceAndCaptionPreview({
         <span className="px-3 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-emerald-300 text-sm">
           {scenes.length} scenes
         </span>
+        <button
+          onClick={handleGenerateAllVoicesAndCaptions}
+          disabled={loading}
+          className="p-2 text-sm bg-gradient-to-r from-emerald-500 to-cyan-500 text-white rounded-lg hover:from-emerald-600 hover:to-cyan-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl cursor-pointer"
+        >
+          <RefreshCcw className="w-4 h-4" />
+          Voice & Captions
+        </button>
       </div>
 
       <div className="max-h-48 overflow-auto custom-scrollbar space-y-3">
@@ -123,9 +133,7 @@ export function VoiceAndCaptionPreview({
                 className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-300 text-xs font-medium hover:bg-blue-500/30 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
                 onClick={() => onRegenerateClick(scene)}
                 disabled={loading}
-                aria-label={`Regenerate voice and caption for scene ${
-                  scene.index + 1
-                }`}
+                aria-label={`Regenerate voice and caption for scene ${scene.index}`}
               >
                 {scene.voiceBase64 ? (
                   <RefreshCcw className="w-4 h-4" />
@@ -135,7 +143,7 @@ export function VoiceAndCaptionPreview({
               </button>
 
               <span className="px-2 py-1 bg-emerald-500/20 border border-emerald-500/30 rounded-lg text-emerald-300 text-xs font-medium">
-                Scene {scene.index + 1}
+                Scene {scene.index}
               </span>
 
               {scene.caption.segments.length === 0 ? (

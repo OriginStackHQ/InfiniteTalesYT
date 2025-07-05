@@ -58,7 +58,8 @@ function AppContent() {
   } = useExportRender();
 
   const {
-    generateVoiceCaption,
+    generateVoiceAndCaption,
+    generateAllVoiceAndCaptions,
     loading: voiceCaptionLoading,
     error: voiceCaptionError,
     setError: setVoiceCaptionError,
@@ -79,6 +80,7 @@ function AppContent() {
 
   const {
     generateImage,
+    generateAllImages,
     loading: imageLoading,
     error: imageError,
     setError: setImageError,
@@ -86,6 +88,7 @@ function AppContent() {
 
   const {
     generateVideo,
+    generateAllVideos,
     loading: videoLoading,
     error: videoError,
     setError: setVideoError,
@@ -417,8 +420,10 @@ function AppContent() {
               refinedStory={refinedStory}
               onImageClick={openImageModal}
               onRegenerateImageClick={openRegenerateImageModal}
+              handleGenerateAllImages={generateAllImages}
               onVideoClick={openVideoModal}
               onRegenerateVideoClick={openRegenerateVideoModal}
+              handleGenerateAllVideos={generateAllVideos}
             />
           )}
 
@@ -437,7 +442,8 @@ function AppContent() {
           {scenes.length > 0 && refinedStory.length > 0 && (
             <VoiceAndCaptionPreview
               loading={combinedLoading}
-              onRegenerateClick={generateVoiceCaption}
+              onRegenerateClick={generateVoiceAndCaption}
+              handleGenerateAllVoicesAndCaptions={generateAllVoiceAndCaptions}
             />
           )}
 

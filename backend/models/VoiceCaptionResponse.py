@@ -27,5 +27,6 @@ class VoiceCaption(BaseModel):
     caption: Caption
     
 class VoiceCaptionResponse(BaseModel):
+    index: int
     narrator: str
     scene: VoiceCaption

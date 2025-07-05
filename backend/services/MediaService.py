@@ -11,6 +11,7 @@ import subprocess
 import urllib.request
 import zipfile
 import unicodedata
+import asyncio
 from tempfile import NamedTemporaryFile
 from pathlib import Path
 from models.ImageRequest import ImageRequest
@@ -53,7 +54,7 @@ class MediaService:
         # Regular expression to extract runs of Devanagari letters
         self.WORD_RE = re.compile(r"[\u0900-\u097F]+")
         self.eleven_labs_api_key = os.getenv("ELEVEN_LABS_API_KEY")
-        self.voice_ids = ["FmBhnvP58BK0vz65OOj7","zT03pEAEi0VHKciJODfn","d0grukerEzs069eKIauC"]
+        self.voice_ids = ["FmBhnvP58BK0vz65OOj7","zT03pEAEi0VHKciJODfn"]
 
     async def generate_google_fx(self, prompt: str, image_count: int = 1, 
                             aspect_ratio: str = "IMAGE_ASPECT_RATIO_PORTRAIT", 
@@ -73,7 +74,9 @@ class MediaService:
         Raises:
             Exception: If API call fails or returns invalid response
         """
-        
+
+        print("Generating image...")
+
         for attempt in range(max_retries + 1):
             try:
                 # Load and validate config
@@ -253,6 +256,7 @@ class MediaService:
         """
         try:
             # Generate images using Google Imagen
+            print("Generating image...")
             imagen_response = self.genai_client.models.generate_images(
                 model="imagen-4.0-generate-preview-06-06",
                 prompt=prompt,
@@ -315,6 +319,7 @@ class MediaService:
                 raise Exception("Invalid image input. Expected bytes.")
 
             # Start video generation
+            print("⏳ Generating video...")
             operation = self.genai_client.models.generate_videos(
                 model="veo-2.0-generate-001",
                 prompt=prompt,
@@ -367,7 +372,18 @@ class MediaService:
     async def generate_image(self, request: ImageRequest ) -> ImageResponse:
         gen_images_base64: List[str] = await self.generate_google_fx(request.text)
         # gen_images_base64: List[str] = await self.generate_image_genai(request.text)
-        return ImageResponse(text=request.text, imageBase64=gen_images_base64[0])
+        return ImageResponse(index=request.index, text=request.text, imageBase64=gen_images_base64[0])
+    
+    async def generate_all_images(self, requests: List[ImageRequest] ) -> List[ImageResponse]:
+        sem = asyncio.Semaphore(5)        # Limit to 5 concurrent requests
+
+        async def process(req: ImageRequest) -> ImageResponse:
+            async with sem:
+                images_b64 = await self.generate_google_fx(req.text)
+                # images_b64 = await self.generate_image_genai(req.text)
+                return ImageResponse(index=req.index, text=req.text, imageBase64=images_b64[0])
+
+        return await asyncio.gather(*(process(r) for r in requests))
     
     async def generate_video(self, request: VideoRequest ) -> VideoResponse:
         # Convert base64 to bytes
@@ -375,6 +391,23 @@ class MediaService:
         gen_videos_base64: List[str] = await self.generate_video_from_image_genai(request.text, image_input)
         return VideoResponse(text=request.text, imageBase64=request.imageBase64, videoBase64=gen_videos_base64[0])
 
+    async def generate_all_videos(self, requests: List[VideoRequest]) -> List[VideoResponse]:
+        sem = asyncio.Semaphore(5)        # Limit to 5 concurrent requests
+
+        async def process(req: VideoRequest) -> VideoResponse:
+            async with sem:
+                image_bytes = base64.b64decode(req.imageBase64)
+                videos_b64 = await self.generate_video_from_image_genai(
+                    req.text, image_bytes
+                )
+                return VideoResponse(
+                    text=req.text,
+                    imageBase64=req.imageBase64,
+                    videoBase64=videos_b64[0],
+                )
+
+        return await asyncio.gather(*(process(r) for r in requests))
+    
     def split_into_sentences(self, line: str) -> List[str]:
         """
         Splits a single line into separate sentences based on Hindi danda (।), 
@@ -731,6 +764,9 @@ class MediaService:
         Generate voice and captions for the provided text.
         """
 
+        print("Generating voice and captions...")
+
+        # Get narrator
         voice_id = request.narrator
 
         # Generate voice and captions
@@ -754,11 +790,21 @@ class MediaService:
         )
 
         return VoiceCaptionResponse(
+            index=request.index,
             narrator=voice_id,
             scene=voiceCaption
         )
 
+    async def generate_all_voices_and_captions(self, requests: List[VoiceCaptionRequest]) -> List[VoiceCaptionResponse]: 
+        sem = asyncio.Semaphore(5)               # Limit to 5 concurrent requests
+        async def process(req: VoiceCaptionRequest) -> VoiceCaptionResponse:
+            async with sem:   
+                return await self.generate_voice_and_caption(req)
+
+        return await asyncio.gather(*[process(req) for req in requests])
+    
     async def get_voices(self):
+        print("Getting voices...")
         try:
             voice_infos : List[VoiceModel] = []
 

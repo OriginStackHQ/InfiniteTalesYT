@@ -8,7 +8,7 @@ export function useGenerateVoiceCaption() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateVoiceCaption = async (scene: Scene) => {
+  const generateVoiceAndCaption = async (scene: Scene) => {
     setError(null);
 
     if (!refinedStory || refinedStory.length === 0) {
@@ -28,6 +28,7 @@ export function useGenerateVoiceCaption() {
     setLoading(true);
     try {
       const payload = {
+        index: scene.index,
         narrator: selectedVoice,
         scene: scene,
       };
@@ -59,15 +60,68 @@ export function useGenerateVoiceCaption() {
         throw new Error("Invalid voice-caption response structure");
       }
     } catch (err: any) {
-      console.error("Voice+Caption error:", err);
-      setError("Voice+Caption failed: " + err.message);
+      console.error("Voice and Caption error:", err);
+      setError("Voice and Caption failed: " + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateAllVoiceAndCaptions = async () => {
+    setError(null);
+    setLoading(true);
+
+    if (!refinedStory || refinedStory.length === 0) {
+      setError("Please refine the story first.");
+      return;
+    }
+    if (!selectedVoice) {
+      setError("Please select a voice.");
+      return;
+    }
+
+    if (!refinedStory.some((s) => s.text.trim())) {
+      setError("Some scenes have empty text.");
+      return;
+    }
+    try {
+      const payload = scenes.map((scene) => ({
+        index: scene.index,
+        narrator: selectedVoice,
+        scene: scene,
+      }));
+      const res = await fetch(
+        "http://localhost:8000/generate-all-voices-and-captions",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        }
+      );
+      if (!res.ok) {
+        const errorJson = await res.json();
+        throw new Error(errorJson.message);
+      }
+      const response = await res.json();
+      if (response.success && Array.isArray(response.data)) {
+        const updatedScenes = response.data.map(
+          (data) => data.scene
+        ) as Scene[];
+        setScenes(updatedScenes);
+      } else {
+        throw new Error("Invalid voice-caption response structure");
+      }
+    } catch (err: any) {
+      console.error("Voice and Caption error:", err);
+      setError("Voice and Caption failed: " + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return {
-    generateVoiceCaption,
+    generateVoiceAndCaption,
+    generateAllVoiceAndCaptions,
     loading,
     error,
     setError,
