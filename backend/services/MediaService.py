@@ -651,6 +651,9 @@ class MediaService:
             line_end_ms = None
 
             # Align transcript tokens with Vosk tokens
+            matched_tokens = 0
+            matched_pairs = []
+            
             for tok in transcript_tokens:
                 if word_idx >= total_words:
                     break
@@ -665,23 +668,59 @@ class MediaService:
                     "start": w["start"],
                     "end": w["end"]
                 })
+                
+                matched_pairs.append((tok, w["token"]))
                 word_idx += 1
-
-            # Handle unmatched tokens
-            unmatched_count = len(transcript_tokens) - len(current_words)
+                matched_tokens += 1
+        
+            # Handle unmatched tokens with better timing estimation
+            unmatched_count = len(transcript_tokens) - matched_tokens
             if unmatched_count > 0:
-                fallback_time = line_end_ms if line_end_ms is not None else 0
-                for rem_tok in transcript_tokens[len(current_words):]:
-                    current_words.append({
-                        "text": rem_tok,
-                        "start": fallback_time,
-                        "end": fallback_time
-                    })
+                unmatched_tokens = transcript_tokens[matched_tokens:]
+                
+                # Calculate estimated duration per token for unmatched words
+                if line_end_ms is not None and line_start_ms is not None and matched_tokens > 0:
+                    # Use the average duration of matched tokens
+                    total_matched_duration = line_end_ms - line_start_ms
+                    avg_token_duration = max(100, total_matched_duration // matched_tokens)  # Minimum 100ms
+                    
+                    # Start unmatched tokens from where the last matched token ended
+                    current_time = line_end_ms
+                    
+                    for rem_tok in unmatched_tokens:
+                        start_time = current_time
+                        end_time = current_time + avg_token_duration
+                        current_words.append({
+                            "text": rem_tok,
+                            "start": start_time,
+                            "end": end_time
+                        })
+                        current_time = end_time
+            
+                    # Update line_end_ms to include unmatched tokens
+                    line_end_ms = current_time
+                else:
+                    # Fallback: use estimated timing even when no matches
+                    base_time = line_start_ms if line_start_ms is not None else 0
+                    estimated_duration = 500  # 500ms per token as fallback
+                    
+                    for i, rem_tok in enumerate(unmatched_tokens):
+                        start_time = base_time + (i * estimated_duration)
+                        end_time = start_time + estimated_duration
+                        current_words.append({
+                            "text": rem_tok,
+                            "start": start_time,
+                            "end": end_time
+                        })
+                        
+                    if line_start_ms is None:
+                        line_start_ms = base_time
+                    line_end_ms = base_time + (len(transcript_tokens) * estimated_duration)
 
             # Set defaults if nothing matched
             if line_start_ms is None:
                 line_start_ms = 0
-                line_end_ms = 0
+                line_end_ms = max(1000, len(transcript_tokens) * 500)  # Minimum 1 second or 500ms per token
 
             karaoke_lines.append({
                 "index": line_idx,
