@@ -5,12 +5,12 @@ import json
 import datetime
 import requests
 import time
+import torch
 import io
 import math
 import subprocess
 import urllib.request
 import zipfile
-import unicodedata
 import asyncio
 from tempfile import NamedTemporaryFile
 from pathlib import Path
@@ -22,9 +22,13 @@ from models.VoiceCaptionRequest import SceneItem, VoiceCaptionRequest
 from models.VoiceCaptionResponse import VoiceCaption, VoiceCaptionResponse, Word, CaptionSegment, Caption
 from models.VoiceModel import VoiceModel
 from typing import List, Dict, Any
+import whisper
+import whisper_timestamped as whisper_ts
+import shutil
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
+from rapidfuzz.fuzz import partial_ratio
 
 # Load the .env file
 load_dotenv()
@@ -51,8 +55,9 @@ class MediaService:
         self.image_fx_cookie = os.getenv("IMAGE_FX_COOKIE")
         self.file_path = Path(os.path.dirname(os.path.abspath(__file__))) / "data.json"
         self.model_folder_path = Path(os.path.dirname(os.path.abspath(__file__))) / "vosk-model-hi"
+        self.whisper_model = Path(os.path.dirname(os.path.abspath(__file__))) / "whisper/large-v3.pt"
         # Regular expression to extract runs of Devanagari letters
-        self.WORD_RE = re.compile(r"[\u0900-\u097F]+")
+        self.WORD_RE = re.compile(r'["()\']?[\u0900-\u097F\d]+[.,!?;]*["()\']?')
         self.eleven_labs_api_key = os.getenv("ELEVEN_LABS_API_KEY")
         self.voice_ids = ["FmBhnvP58BK0vz65OOj7","zT03pEAEi0VHKciJODfn"]
 
@@ -411,13 +416,13 @@ class MediaService:
     def split_into_sentences(self, line: str) -> List[str]:
         """
         Splits a single line into separate sentences based on Hindi danda (।), 
-        period (.), question mark (?), or exclamation (!).
+        period (.), question mark (?), exclamation (!), or semicolon (;)
         """
         if not line.strip():
             return []
             
-        # Split on whitespace following any of '। . ! ?'
-        parts = re.split(r'(?<=[।\.,!?])\s+', line.strip())
+        # Split on whitespace following any of '। . ! ? ;'.
+        parts = re.split(r'(?<=[।\.,!?;])\s+', line.strip())
         return [p.strip() for p in parts if p.strip()]
 
     def chunk_sentence_by_words(self, sentence: str, max_words: int) -> List[str]:
@@ -583,19 +588,79 @@ class MediaService:
             result_list.extend(final_res["result"])
             
         return {"result": result_list}
-
-    @staticmethod
-    def ms_from_float(seconds_f: float) -> int:
-        """Convert float seconds to integer milliseconds."""
-        return math.floor(seconds_f * 1000)
-
-    @staticmethod
-    def strip_diacritics(txt: str) -> str:
+    
+    def download_and_save_whisper_model(self):
         """
-        Normalize to NFD and drop all combining marks.
+        Download and save the Whisper model.
         """
-        normalized = unicodedata.normalize("NFD", txt)
-        return "".join(ch for ch in normalized if not unicodedata.category(ch).startswith("M"))
+
+        if self.whisper_model.exists():
+            return
+
+        if not self.whisper_model.parent.exists():
+            self.whisper_model.parent.mkdir(parents=True)
+        
+        try:
+            print("Downloading Whisper model...")
+            model = whisper.load_model("large")
+            shutil.copy(Path.home() / ".cache" / "whisper/large-v3.pt", self.whisper_model)
+            
+        except Exception as e:
+            raise Exception(f"Failed to load Whisper model: {e}")
+        
+    def run_whisper_recognition(self, wav_data: io.BytesIO) -> Dict[str, Any]:
+        """
+        Run offline Whisper with whisper-timestamped on WAV data.
+        Falls back to default whisper if anything fails.
+        """
+        try:
+            self.download_and_save_whisper_model()
+            device = "cuda" if torch.cuda.is_available() else "cpu"
+            print(f"Using device: {device}")
+
+            whisper_model = whisper.load_model(self.whisper_model, device=device)
+
+            # Save wav_data to temp file (Windows-safe)
+            temp_file = NamedTemporaryFile(suffix=".wav", delete=False)
+            temp_path = temp_file.name
+            temp_file.close()
+
+            with open(temp_path, 'wb') as f:
+                wav_data.seek(0)
+                f.write(wav_data.getvalue())
+
+            whisper_words = []
+
+            try:
+                print("Running Whisper with timestamped...")
+
+                # Load audio using timestamped loader
+                audio = whisper_ts.load_audio(temp_path)
+
+                result = whisper_ts.transcribe(
+                    whisper_model,
+                    audio,
+                    language="hi",
+                    remove_empty_words=True
+                )
+
+                if 'segments' in result:
+                    for segment in result['segments']:
+                        if 'words' in segment:
+                            for word in segment['words']:
+                                whisper_words.append({
+                                    "word": word['text'].strip(),
+                                    "start": word['start'],
+                                    "end": word['end']
+                                })
+
+            finally:
+                os.unlink(temp_path)
+
+            return {"result": whisper_words}
+
+        except Exception as e:
+            raise Exception(f"Failed to run offline Whisper recognition: {e}")
 
     def tokenize_transcript_line(self, line: str) -> List[str]:
         """
@@ -603,35 +668,93 @@ class MediaService:
         """
         return self.WORD_RE.findall(line)
 
-    def map_words_to_lines(self, json_data: Dict[str, Any], vosk_result: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def find_best_alignment(self, transcript_tokens, word_start_idx, word_timings, normalize_token, look_ahead=10):
         """
-        Map Vosk word-level timing to transcript lines, token-by-token.
+        Find the best alignment between transcript tokens and word timings.
         """
-        # Read all nonempty transcript lines
+        total_words = len(word_timings)
+        if word_start_idx >= total_words:
+            return [], word_start_idx
+        
+        matched_pairs = []
+        current_word_idx = word_start_idx
+        
+        for transcript_token in transcript_tokens:
+            normalized_transcript = normalize_token(transcript_token)
+            
+            # Skip empty tokens
+            if not normalized_transcript:
+                matched_pairs.append((transcript_token, None))
+                continue
+                
+            best_match_idx = None
+            best_match_score = -1
+            
+            # Define the search window
+            search_end = min(current_word_idx + look_ahead, total_words)
+            word_search_window = word_timings[current_word_idx:search_end]
+            
+            for i, word in enumerate(word_search_window):
+                if current_word_idx + i >= total_words:
+                    break
+                    
+                normalized_word = normalize_token(word["token"])
+                
+                # Skip empty word tokens
+                if not normalized_word:
+                    continue
+                
+                # Use RapidFuzz partial_ratio (0-100 scale)
+                score = partial_ratio(normalized_transcript, normalized_word) / 100.0
+                
+                # Apply distance penalty to prefer closer matches
+                distance_penalty = i * 0.1
+                final_score = score - distance_penalty
+                
+                # Update best match if score is good
+                if final_score > best_match_score and final_score > 0.6:  # threshold
+                    best_match_idx = i
+                    best_match_score = final_score
+            
+            if best_match_idx is not None:
+                word = word_search_window[best_match_idx]
+                matched_pairs.append((transcript_token, word))
+                # Advance the window after the match
+                current_word_idx += best_match_idx + 1
+            else:
+                matched_pairs.append((transcript_token, None))
+        
+        return matched_pairs, current_word_idx
+
+    def map_words_to_lines(self, json_data: Dict[str, Any], word_result: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Map matched word-level timing to transcript lines using RapidFuzz alignment.
+        """
         segments = json_data.get("segments", [])
         lines = [seg["text"].strip() for seg in segments if seg.get("text", "").strip()]
         
         if not lines:
             raise Exception("No lines found in json data")
 
-        # Flatten Vosk's recognition results
-        vosk_words = vosk_result.get("result", [])
-        if not vosk_words:
-            raise Exception("No words found in Vosk result")
+        result_words = word_result.get("result", [])
+        if not result_words:
+            raise Exception("No words found in word result")
 
-        # Convert Vosk words into timing data
         word_timings = [
             {
                 "token": w["word"], 
                 "start": math.floor(float(w["start"]) * 1000),
                 "end": math.ceil(float(w["end"]) * 1000),
             }
-            for w in vosk_words
+            for w in result_words
         ]
 
         karaoke_lines = []
         word_idx = 0
-        total_words = len(word_timings)
+
+        def normalize_token(token):
+            """Normalize token for comparison - remove punctuation and convert to lowercase"""
+            return token.lower().strip(".,!?;'\"()").strip()
 
         for line_idx, line_text in enumerate(lines):
             transcript_tokens = self.tokenize_transcript_line(line_text)
@@ -646,82 +769,101 @@ class MediaService:
                 })
                 continue
 
+            # Find best alignment for this line using RapidFuzz
+            matched_pairs, next_word_idx = self.find_best_alignment(
+                transcript_tokens, word_idx, word_timings, normalize_token
+            )
+            
             current_words = []
             line_start_ms = None
             line_end_ms = None
-
-            # Align transcript tokens with Vosk tokens
-            matched_tokens = 0
-            matched_pairs = []
+            matched_count = 0
             
-            for tok in transcript_tokens:
-                if word_idx >= total_words:
-                    break
+            # Process matched pairs
+            for transcript_token, word in matched_pairs:
+                if word is not None:
+                    
+                    if line_start_ms is None:
+                        line_start_ms = word["start"]
+                    line_end_ms = word["end"]
+                    
+                    current_words.append({
+                        "text": transcript_token,
+                        "start": word["start"],
+                        "end": word["end"]
+                    })
+                    matched_count += 1
                 
-                w = word_timings[word_idx]
-                if line_start_ms is None:
-                    line_start_ms = w["start"]
-                line_end_ms = w["end"]
-
-                current_words.append({
-                    "text": tok,
-                    "start": w["start"],
-                    "end": w["end"]
-                })
-                
-                matched_pairs.append((tok, w["token"]))
-                word_idx += 1
-                matched_tokens += 1
-        
             # Handle unmatched tokens with better timing estimation
-            unmatched_count = len(transcript_tokens) - matched_tokens
-            if unmatched_count > 0:
-                unmatched_tokens = transcript_tokens[matched_tokens:]
-                
-                # Calculate estimated duration per token for unmatched words
-                if line_end_ms is not None and line_start_ms is not None and matched_tokens > 0:
-                    # Use the average duration of matched tokens
-                    total_matched_duration = line_end_ms - line_start_ms
-                    avg_token_duration = max(100, total_matched_duration // matched_tokens)  # Minimum 100ms
-                    
-                    # Start unmatched tokens from where the last matched token ended
-                    current_time = line_end_ms
-                    
-                    for rem_tok in unmatched_tokens:
-                        start_time = current_time
-                        end_time = current_time + avg_token_duration
-                        current_words.append({
-                            "text": rem_tok,
-                            "start": start_time,
-                            "end": end_time
-                        })
-                        current_time = end_time
+            unmatched_tokens = [pair[0] for pair in matched_pairs if pair[1] is None]
             
-                    # Update line_end_ms to include unmatched tokens
-                    line_end_ms = current_time
-                else:
-                    # Fallback: use estimated timing even when no matches
-                    base_time = line_start_ms if line_start_ms is not None else 0
-                    estimated_duration = 500  # 500ms per token as fallback
+            if unmatched_tokens:
+                # Calculate timing for unmatched tokens
+                if line_end_ms is not None and line_start_ms is not None and matched_count > 0:
+                    # Distribute unmatched tokens evenly in the gaps
+                    matched_duration = line_end_ms - line_start_ms
+                    avg_token_duration = max(200, matched_duration // max(1, matched_count))
                     
-                    for i, rem_tok in enumerate(unmatched_tokens):
+                    # Insert unmatched tokens with estimated timing
+                    for i, (transcript_token, word) in enumerate(matched_pairs):
+                        if word is None:
+                            # Find timing based on surrounding matches
+                            prev_end = line_start_ms
+                            next_start = line_end_ms
+                            
+                            # Find previous matched word
+                            for j in range(i - 1, -1, -1):
+                                if matched_pairs[j][1] is not None:
+                                    prev_end = matched_pairs[j][1]["end"]
+                                    break
+                            
+                            # Find next matched word
+                            for j in range(i + 1, len(matched_pairs)):
+                                if matched_pairs[j][1] is not None:
+                                    next_start = matched_pairs[j][1]["start"]
+                                    break
+                            
+                            # Calculate timing for this unmatched token
+                            start_time = prev_end
+                            end_time = min(prev_end + avg_token_duration, next_start)
+                            
+                            # Update the current_words list at the correct position
+                            insert_pos = len([w for w in current_words if w["start"] <= start_time])
+                            current_words.insert(insert_pos, {
+                                "text": transcript_token,
+                                "start": start_time,
+                                "end": end_time
+                            })
+                            
+                            line_end_ms = max(line_end_ms, end_time)
+                else:
+                    # No matches at all - use estimated timing
+                    estimated_duration = 400  # ms per token
+                    base_time = 0
+                    
+                    for i, transcript_token in enumerate(transcript_tokens):
                         start_time = base_time + (i * estimated_duration)
                         end_time = start_time + estimated_duration
                         current_words.append({
-                            "text": rem_tok,
+                            "text": transcript_token,
                             "start": start_time,
                             "end": end_time
                         })
-                        
-                    if line_start_ms is None:
-                        line_start_ms = base_time
+                    
+                    line_start_ms = base_time
                     line_end_ms = base_time + (len(transcript_tokens) * estimated_duration)
-
-            # Set defaults if nothing matched
+            
+            # Set defaults if nothing was processed
             if line_start_ms is None:
                 line_start_ms = 0
-                line_end_ms = max(1000, len(transcript_tokens) * 500)  # Minimum 1 second or 500ms per token
-
+                line_end_ms = max(1000, len(transcript_tokens) * 400)
+            
+            # Sort words by start time
+            current_words.sort(key=lambda x: x["start"])
+            
+            # Update word_idx for next line
+            word_idx = next_word_idx
+            
             karaoke_lines.append({
                 "index": line_idx,
                 "start": line_start_ms,
@@ -731,7 +873,7 @@ class MediaService:
             })
 
         return karaoke_lines
-
+    
     def ms_to_srt_timestamp(self, ms: int) -> str:
         """
         Convert milliseconds to SRT timestamp format 'HH:MM:SS,mmm'.
@@ -772,9 +914,10 @@ class MediaService:
         
         wav_data = self.convert_mp3_to_wav(mp3_data)
 
-        vosk_result = self.run_vosk_recognition(wav_data)
+        model_result = self.run_vosk_recognition(wav_data)
+        # model_result = self.run_whisper_recognition(wav_data)
 
-        karaoke_lines = self.map_words_to_lines(json_data, vosk_result)
+        karaoke_lines = self.map_words_to_lines(json_data, model_result)
         
         # Convert to proper format
         segments = []

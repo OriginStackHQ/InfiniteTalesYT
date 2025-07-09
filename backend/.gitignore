@@ -95,5 +95,8 @@ services/vosk-model-hi
 # Ignore vosk model zip
 services/vosk-model-hi-0.22.zip
 
+# Ignore whisper model
+services/whisper
+
 # Ignore data.json
 services/data.json

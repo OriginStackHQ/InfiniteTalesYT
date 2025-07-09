@@ -16,7 +16,7 @@ class StoryService:
         if not line:
             return ""
 
-        line = line.replace("—", ", ").replace("–", ",")
+        line = line.replace(" — ", ", ").replace("–", " ")
         line = line.replace("‘", "'").replace("’", "'")
         line = line.replace("“", '"').replace("”", '"')
         return line
